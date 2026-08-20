@@ -1,0 +1,152 @@
+package com.example.retail.service;
+
+import com.example.retail.model.Bon;
+import com.example.retail.model.Categorie;
+import com.example.retail.model.Produs;
+import com.example.retail.model.Vanzare;
+import com.example.retail.repository.BonRepository;
+import com.example.retail.repository.ProdusRepository;
+import com.example.retail.repository.VanzareRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class ProdusService {
+
+    private final ProdusRepository produsRepository;
+    private final VanzareRepository vanzareRepository;
+    private final BonRepository bonRepository;
+    private final EanValidator eanValidator;
+    private final DiscountStrategy alimentarDiscount;
+    private final DiscountStrategy nealimentarDiscount;
+
+    public ProdusService(ProdusRepository produsRepository,
+                         VanzareRepository vanzareRepository,
+                         BonRepository bonRepository,
+                         EanValidator eanValidator,
+                         @Qualifier("alimentarDiscount") DiscountStrategy alimentarDiscount,
+                         @Qualifier("nealimentarDiscount") DiscountStrategy nealimentarDiscount) {
+        this.produsRepository = produsRepository;
+        this.vanzareRepository = vanzareRepository;
+        this.bonRepository = bonRepository;
+        this.eanValidator = eanValidator;
+        this.alimentarDiscount = alimentarDiscount;
+        this.nealimentarDiscount = nealimentarDiscount;
+    }
+
+    public List<Produs> listaProduse() {
+        return produsRepository.findAll();
+    }
+
+    public Produs obtineProdus(Long id) {
+        return produsRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Produs inexistent cu id: " + id));
+    }
+
+    public Produs salveazaProdus(Produs produs) {
+        if (!eanValidator.esteValid(produs.getCodEan())) {
+            throw new IllegalArgumentException("Cod EAN invalid: " + produs.getCodEan());
+        }
+        return produsRepository.save(produs);
+    }
+
+    public void stergeProdus(Long id) {
+        if (vanzareRepository.existsByProdusId(id)) {
+            throw new IllegalStateException(
+                    "Produsul nu poate fi sters, pentru ca are vanzari inregistrate pe numele lui. " +
+                            "Istoricul de vanzari trebuie pastrat.");
+        }
+        produsRepository.deleteById(id);
+    }
+
+    public Vanzare inregistreazaVanzare(Long produsId, int cantitate) {
+        Produs produs = produsRepository.findById(produsId)
+                .orElseThrow(() -> new IllegalArgumentException("Produs inexistent"));
+
+        Vanzare linie = proceseazaLinie(produs, cantitate);
+        return vanzareRepository.save(linie);
+    }
+
+    public Vanzare obtineVanzare(Long id) {
+        return vanzareRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Vanzare inexistenta cu id: " + id));
+    }
+
+    @Transactional
+    public Bon inregistreazaBon(List<Long> produsIds, List<Integer> cantitati) {
+        if (produsIds == null || produsIds.isEmpty()) {
+            throw new IllegalArgumentException("Bonul trebuie sa contina cel putin un produs");
+        }
+        if (cantitati == null || produsIds.size() != cantitati.size()) {
+            throw new IllegalArgumentException("Numarul de produse nu corespunde cu numarul de cantitati");
+        }
+
+        Map<Long, Integer> cantitatiCombinate = new LinkedHashMap<>();
+        for (int i = 0; i < produsIds.size(); i++) {
+            cantitatiCombinate.merge(produsIds.get(i), cantitati.get(i), Integer::sum);
+        }
+
+        Bon bon = new Bon();
+        BigDecimal totalFaraDiscount = BigDecimal.ZERO;
+        BigDecimal totalCuDiscount = BigDecimal.ZERO;
+
+        for (Map.Entry<Long, Integer> intrare : cantitatiCombinate.entrySet()) {
+            Produs produs = produsRepository.findById(intrare.getKey())
+                    .orElseThrow(() -> new IllegalArgumentException("Produs inexistent"));
+
+            Vanzare linie = proceseazaLinie(produs, intrare.getValue());
+            bon.adaugaLinie(linie);
+
+            totalFaraDiscount = totalFaraDiscount.add(linie.getTotalFaraDiscount());
+            totalCuDiscount = totalCuDiscount.add(linie.getTotalCuDiscount());
+        }
+
+        // Rotunjire la 2 zecimale pentru sumele finale ale bonului
+        bon.setTotalFaraDiscount(totalFaraDiscount.setScale(2, RoundingMode.HALF_UP));
+        bon.setTotalDiscount(totalFaraDiscount.subtract(totalCuDiscount).setScale(2, RoundingMode.HALF_UP));
+        bon.setTotalCuDiscount(totalCuDiscount.setScale(2, RoundingMode.HALF_UP));
+
+        return bonRepository.save(bon);
+    }
+
+    public Bon obtineBon(Long id) {
+        return bonRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Bon inexistent cu id: " + id));
+    }
+
+    private Vanzare proceseazaLinie(Produs produs, int cantitate) {
+        if (cantitate <= 0) {
+            throw new IllegalArgumentException("Cantitatea trebuie sa fie mai mare decat 0");
+        }
+        if (produs.getCantitateStoc() < cantitate) {
+            throw new IllegalStateException("Stoc insuficient pentru " + produs.getNume());
+        }
+
+        DiscountStrategy strategie = produs.getCategorie() == Categorie.ALIMENTAR
+                ? alimentarDiscount
+                : nealimentarDiscount;
+
+        BigDecimal totalFaraDiscount = produs.getPret()
+                .multiply(BigDecimal.valueOf(cantitate))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        // S-a adaugat setScale si aici in cazul in care strategia returneaza mai multe zecimale
+        BigDecimal totalCuDiscount = strategie.aplicaDiscount(produs.getPret(), cantitate)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal discountValoare = totalFaraDiscount.subtract(totalCuDiscount)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        produs.setCantitateStoc(produs.getCantitateStoc() - cantitate);
+        produsRepository.save(produs);
+
+        return new Vanzare(produs, cantitate, totalFaraDiscount, discountValoare, totalCuDiscount);
+    }
+}

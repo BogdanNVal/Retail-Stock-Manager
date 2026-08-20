@@ -1,0 +1,49 @@
+services:
+
+  mysql:
+    image: mysql:8.4
+    container_name: retail-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: retail_stock
+      MYSQL_ROOT_PASSWORD: parola_root
+    ports:
+      - "3306:3306"
+    volumes:
+      - retail-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pparola_root"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: retail-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: parola_root
+    ports:
+      - "8081:80"
+
+  app:
+    build: .
+    container_name: retail-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/retail_stock?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: parola_root
+    ports:
+      - "8080:8080"
+
+volumes:
+  retail-mysql-data:

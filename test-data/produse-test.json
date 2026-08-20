@@ -1,0 +1,12 @@
+[
+  {"nume": "Paine alba", "categorie": "ALIMENTAR", "pret": 5.50, "cantitateStoc": 40, "codEan": "12345670"},
+  {"nume": "Lapte 1L", "categorie": "ALIMENTAR", "pret": 8.20, "cantitateStoc": 30, "codEan": "76543210"},
+  {"nume": "Ulei floarea soarelui 1L", "categorie": "ALIMENTAR", "pret": 12.90, "cantitateStoc": 25, "codEan": "11122234"},
+  {"nume": "Orez 1kg", "categorie": "ALIMENTAR", "pret": 9.40, "cantitateStoc": 50, "codEan": "22233349"},
+  {"nume": "Cafea boabe 250g", "categorie": "ALIMENTAR", "pret": 24.99, "cantitateStoc": 15, "codEan": "33344454"},
+  {"nume": "Detergent rufe 2L", "categorie": "NEALIMENTAR", "pret": 32.50, "cantitateStoc": 20, "codEan": "44455569"},
+  {"nume": "Hartie igienica 8 role", "categorie": "NEALIMENTAR", "pret": 15.75, "cantitateStoc": 35, "codEan": "55566674"},
+  {"nume": "Sapun lichid 500ml", "categorie": "NEALIMENTAR", "pret": 11.20, "cantitateStoc": 28, "codEan": "66677789"},
+  {"nume": "Becuri LED set 4buc", "categorie": "NEALIMENTAR", "pret": 22.00, "cantitateStoc": 18, "codEan": "77788894"},
+  {"nume": "Baterii AA set 4buc", "categorie": "NEALIMENTAR", "pret": 14.60, "cantitateStoc": 22, "codEan": "88899909"}
+]
