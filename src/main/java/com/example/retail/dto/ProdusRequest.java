@@ -23,8 +23,9 @@ public class ProdusRequest {
     @DecimalMin(value = "0.0", inclusive = false, message = "Pretul trebuie sa fie mai mare decat 0")
     private BigDecimal pret;
 
+    @NotNull(message = "Cantitatea in stoc este obligatorie")
     @Min(value = 0, message = "Cantitatea in stoc nu poate fi negativa")
-    private int cantitateStoc;
+    private Integer cantitateStoc;
 
     @NotBlank(message = "Codul EAN este obligatoriu")
     private String codEan;
@@ -56,11 +57,11 @@ public class ProdusRequest {
         this.pret = pret;
     }
 
-    public int getCantitateStoc() {
+    public Integer getCantitateStoc() {
         return cantitateStoc;
     }
 
-    public void setCantitateStoc(int cantitateStoc) {
+    public void setCantitateStoc(Integer cantitateStoc) {
         this.cantitateStoc = cantitateStoc;
     }
 

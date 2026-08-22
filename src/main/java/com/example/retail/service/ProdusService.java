@@ -137,7 +137,6 @@ public class ProdusService {
                 .multiply(BigDecimal.valueOf(cantitate))
                 .setScale(2, RoundingMode.HALF_UP);
 
-        // S-a adaugat setScale si aici in cazul in care strategia returneaza mai multe zecimale
         BigDecimal totalCuDiscount = strategie.aplicaDiscount(produs.getPret(), cantitate)
                 .setScale(2, RoundingMode.HALF_UP);
 
