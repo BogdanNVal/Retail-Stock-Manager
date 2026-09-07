@@ -55,7 +55,7 @@
                     </p>
                     <p style="margin-top:12px">
                         Pentru inspectie locala poti folosi phpMyAdmin (daca e pornit via Compose)
-                        la <code>http://localhost:8081</code>. Credentele DB sunt cele din variabilele de mediu
+                        la <code>http://localhost:8081</code>. Credentialele DB sunt cele din variabilele de mediu
                         (<code>MYSQL_ROOT_PASSWORD</code> / <code>SPRING_DATASOURCE_*</code>).
                     </p>
                 </div>
