@@ -1,5 +1,7 @@
 package com.example.retail.config;
 
+import java.math.BigDecimal;
+
 /**
  * Singleton clasic (thread-safe, lazy initialization) pentru setari globale
  * ale aplicatiei (numele magazinului, procentul de TVA).
@@ -34,6 +36,21 @@ public final class AppConfigSingleton {
     }
 
     public enum NivelTva {
-        STANDARD, REDUS
+        STANDARD(new BigDecimal("0.19")),
+        REDUS(new BigDecimal("0.09"));
+
+        private final BigDecimal cota;
+
+        NivelTva(BigDecimal cota) {
+            this.cota = cota;
+        }
+
+        public BigDecimal getCota() {
+            return cota;
+        }
+
+        public int getProcent() {
+            return cota.multiply(BigDecimal.valueOf(100)).intValue();
+        }
     }
 }

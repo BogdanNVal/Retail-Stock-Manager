@@ -1,5 +1,6 @@
 package com.example.retail.service;
 
+import com.example.retail.config.AppConfigSingleton;
 import com.example.retail.model.Bon;
 import com.example.retail.model.Categorie;
 import com.example.retail.model.Produs;
@@ -50,11 +51,29 @@ public class ProdusService {
                 .orElseThrow(() -> new IllegalArgumentException("Produs inexistent cu id: " + id));
     }
 
+    @Transactional
     public Produs salveazaProdus(Produs produs) {
-        if (!eanValidator.esteValid(produs.getCodEan())) {
-            throw new IllegalArgumentException("Cod EAN invalid: " + produs.getCodEan());
+        valideazaEan(produs.getCodEan());
+        if (produsRepository.existsByCodEan(produs.getCodEan())) {
+            throw new IllegalArgumentException("Cod EAN deja folosit: " + produs.getCodEan());
         }
         return produsRepository.save(produs);
+    }
+
+    @Transactional
+    public Produs actualizeazaProdus(Long id, Produs dateNoi) {
+        Produs existent = obtineProdus(id);
+        valideazaEan(dateNoi.getCodEan());
+        if (produsRepository.existsByCodEanAndIdNot(dateNoi.getCodEan(), id)) {
+            throw new IllegalArgumentException("Cod EAN deja folosit: " + dateNoi.getCodEan());
+        }
+
+        existent.setNume(dateNoi.getNume());
+        existent.setCategorie(dateNoi.getCategorie());
+        existent.setPret(dateNoi.getPret());
+        existent.setCantitateStoc(dateNoi.getCantitateStoc());
+        existent.setCodEan(dateNoi.getCodEan());
+        return produsRepository.save(existent);
     }
 
     public void stergeProdus(Long id) {
@@ -66,6 +85,11 @@ public class ProdusService {
         produsRepository.deleteById(id);
     }
 
+    /**
+     * Processes a single sale line without attaching it to a {@link Bon}.
+     * Kept for unit tests that exercise discount/stock logic in isolation;
+     * the UI and production checkout path use {@link #inregistreazaBon}.
+     */
     public Vanzare inregistreazaVanzare(Long produsId, int cantitate) {
         Produs produs = produsRepository.findById(produsId)
                 .orElseThrow(() -> new IllegalArgumentException("Produs inexistent"));
@@ -109,9 +133,17 @@ public class ProdusService {
         }
 
         // Rotunjire la 2 zecimale pentru sumele finale ale bonului
-        bon.setTotalFaraDiscount(totalFaraDiscount.setScale(2, RoundingMode.HALF_UP));
+        totalFaraDiscount = totalFaraDiscount.setScale(2, RoundingMode.HALF_UP);
+        totalCuDiscount = totalCuDiscount.setScale(2, RoundingMode.HALF_UP);
+        bon.setTotalFaraDiscount(totalFaraDiscount);
         bon.setTotalDiscount(totalFaraDiscount.subtract(totalCuDiscount).setScale(2, RoundingMode.HALF_UP));
-        bon.setTotalCuDiscount(totalCuDiscount.setScale(2, RoundingMode.HALF_UP));
+        bon.setTotalCuDiscount(totalCuDiscount);
+
+        AppConfigSingleton.NivelTva nivelTva = AppConfigSingleton.getInstance().getTva();
+        BigDecimal totalTva = totalCuDiscount.multiply(nivelTva.getCota()).setScale(2, RoundingMode.HALF_UP);
+        bon.setProcentTva(nivelTva.getProcent());
+        bon.setTotalTva(totalTva);
+        bon.setTotalCuTva(totalCuDiscount.add(totalTva).setScale(2, RoundingMode.HALF_UP));
 
         return bonRepository.save(bon);
     }
@@ -119,6 +151,12 @@ public class ProdusService {
     public Bon obtineBon(Long id) {
         return bonRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Bon inexistent cu id: " + id));
+    }
+
+    private void valideazaEan(String codEan) {
+        if (!eanValidator.esteValid(codEan)) {
+            throw new IllegalArgumentException("Cod EAN invalid: " + codEan);
+        }
     }
 
     private Vanzare proceseazaLinie(Produs produs, int cantitate) {

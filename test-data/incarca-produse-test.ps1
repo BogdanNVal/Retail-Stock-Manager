@@ -1,13 +1,25 @@
 # Incarca produsele de test in aplicatie, printr-un POST pentru fiecare,
-# catre REST API-ul aplicatiei (nu necesita autentificare).
+# catre REST API-ul aplicatiei. POST necesita autentificare (HTTP Basic).
 #
 # Rulare (din radacina proiectului, in PowerShell):
 #   .\test-data\incarca-produse-test.ps1
 #
-# Daca aplicatia ruleaza pe alt port/host, modifica variabila $baseUrl mai jos.
+# Optional:
+#   $env:BASE_URL = "http://localhost:8080"
+#   $env:APP_ADMIN_USERNAME = "admin"
+#   $env:APP_ADMIN_PASSWORD = "admin123"
 
-$baseUrl = "http://localhost:8080"
+$baseUrl = if ($env:BASE_URL) { $env:BASE_URL } else { "http://localhost:8080" }
+$username = if ($env:APP_ADMIN_USERNAME) { $env:APP_ADMIN_USERNAME } else { "admin" }
+$password = if ($env:APP_ADMIN_PASSWORD) { $env:APP_ADMIN_PASSWORD } else { "admin123" }
 $produse = Get-Content -Path "$PSScriptRoot\produse-test.json" -Raw | ConvertFrom-Json
+
+$pair = "${username}:${password}"
+$bytes = [System.Text.Encoding]::ASCII.GetBytes($pair)
+$basicAuth = [Convert]::ToBase64String($bytes)
+$headers = @{
+    Authorization = "Basic $basicAuth"
+}
 
 Write-Host "Se incarca $($produse.Count) produse in $baseUrl/api/produse ..." -ForegroundColor Cyan
 
@@ -15,7 +27,7 @@ foreach ($produs in $produse) {
     $body = $produs | ConvertTo-Json
 
     try {
-        $raspuns = Invoke-RestMethod -Uri "$baseUrl/api/produse" -Method Post -Body $body -ContentType "application/json"
+        $raspuns = Invoke-RestMethod -Uri "$baseUrl/api/produse" -Method Post -Body $body -ContentType "application/json" -Headers $headers
         Write-Host "OK   -> $($produs.nume) (id: $($raspuns.id))" -ForegroundColor Green
     }
     catch {

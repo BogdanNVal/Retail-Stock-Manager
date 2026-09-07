@@ -27,13 +27,22 @@ public class ProdusController {
     @GetMapping
     public String listaProduse(Model model) {
         model.addAttribute("produse", produsService.listaProduse());
-        return "produse-list"; // -> WEB-INF/jsp/produse-list.jsp
+        return "produse-list";
     }
 
     @GetMapping("/nou")
     public String formularProdusNou(Model model) {
         model.addAttribute("produs", new Produs());
         model.addAttribute("categorii", Categorie.values());
+        model.addAttribute("titluFormular", "Adauga produs");
+        return "produs-form";
+    }
+
+    @GetMapping("/{id}/editeaza")
+    public String formularEditare(@PathVariable Long id, Model model) {
+        model.addAttribute("produs", produsService.obtineProdus(id));
+        model.addAttribute("categorii", Categorie.values());
+        model.addAttribute("titluFormular", "Editeaza produs");
         return "produs-form";
     }
 
@@ -42,15 +51,20 @@ public class ProdusController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("categorii", Categorie.values());
             model.addAttribute("erori", extrageMesajeEroare(bindingResult));
+            model.addAttribute("titluFormular", produs.getId() == null ? "Adauga produs" : "Editeaza produs");
             return "produs-form";
         }
 
         try {
-            produsService.salveazaProdus(produs);
+            if (produs.getId() == null) {
+                produsService.salveazaProdus(produs);
+            } else {
+                produsService.actualizeazaProdus(produs.getId(), produs);
+            }
         } catch (IllegalArgumentException ex) {
-            // cod EAN invalid (checksum) - validat in service
             model.addAttribute("categorii", Categorie.values());
             model.addAttribute("erori", List.of(ex.getMessage()));
+            model.addAttribute("titluFormular", produs.getId() == null ? "Adauga produs" : "Editeaza produs");
             return "produs-form";
         }
 

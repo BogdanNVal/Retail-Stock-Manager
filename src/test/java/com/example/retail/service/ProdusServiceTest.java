@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,12 +62,42 @@ class ProdusServiceTest {
     @Test
     void salveazaProdus_cuCodEanValid_esteSalvat() {
         Produs produs = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(5), 10, "12345670");
+        when(produsRepository.existsByCodEan("12345670")).thenReturn(false);
         when(produsRepository.save(produs)).thenReturn(produs);
 
         Produs rezultat = produsService.salveazaProdus(produs);
 
         assertEquals(produs, rezultat);
         verify(produsRepository).save(produs);
+    }
+
+    @Test
+    void salveazaProdus_cuCodEanDuplicat_aruncaExceptie() {
+        Produs produs = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(5), 10, "12345670");
+        when(produsRepository.existsByCodEan("12345670")).thenReturn(true);
+
+        IllegalArgumentException exceptie = assertThrows(IllegalArgumentException.class,
+                () -> produsService.salveazaProdus(produs));
+
+        assertTrue(exceptie.getMessage().contains("deja folosit"));
+        verify(produsRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizeazaProdus_actualizeazaCampurile() {
+        Produs existent = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(5), 10, "12345670");
+        existent.setId(1L);
+        Produs dateNoi = new Produs("Paine integrala", Categorie.ALIMENTAR, BigDecimal.valueOf(6), 12, "12345670");
+
+        when(produsRepository.findById(1L)).thenReturn(Optional.of(existent));
+        when(produsRepository.existsByCodEanAndIdNot("12345670", 1L)).thenReturn(false);
+        when(produsRepository.save(existent)).thenReturn(existent);
+
+        Produs rezultat = produsService.actualizeazaProdus(1L, dateNoi);
+
+        assertEquals("Paine integrala", rezultat.getNume());
+        assertEquals(0, BigDecimal.valueOf(6).compareTo(rezultat.getPret()));
+        assertEquals(12, rezultat.getCantitateStoc());
     }
 
     @Test
@@ -120,6 +151,9 @@ class ProdusServiceTest {
         assertEquals(0, BigDecimal.valueOf(65).compareTo(bon.getTotalFaraDiscount()));
         assertEquals(0, BigDecimal.valueOf(61).compareTo(bon.getTotalCuDiscount()));
         assertEquals(0, BigDecimal.valueOf(4).compareTo(bon.getTotalDiscount()));
+        assertEquals(19, bon.getProcentTva());
+        assertEquals(0, BigDecimal.valueOf(11.59).compareTo(bon.getTotalTva()));
+        assertEquals(0, BigDecimal.valueOf(72.59).compareTo(bon.getTotalCuTva()));
         assertEquals(15, paine.getCantitateStoc());
         assertEquals(17, pix.getCantitateStoc());
     }
