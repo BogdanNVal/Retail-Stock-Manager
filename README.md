@@ -63,7 +63,7 @@ TVA is applied on the discounted total using `AppConfigSingleton.NivelTva` (defa
 Mutating endpoints accept HTTP Basic or an authenticated browser session.
 CSRF is disabled for `/api/**` so scripts can call the API with Basic auth.
 
-Example (create):
+Example (create) — **Linux / macOS / Git Bash**:
 
 ```bash
 curl -u admin:admin123 -X POST http://localhost:8080/api/produse \
@@ -71,24 +71,67 @@ curl -u admin:admin123 -X POST http://localhost:8080/api/produse \
   -d '{"nume":"Paine","categorie":"ALIMENTAR","pret":5,"cantitateStoc":20,"codEan":"12345670"}'
 ```
 
+**Windows PowerShell** — use `curl.exe` (not `curl`, which is an alias for `Invoke-WebRequest`)
+or `Invoke-RestMethod`. The bash-style `'{"json":...}'` quoting often causes a generic HTTP 400 in PowerShell.
+
+```powershell
+curl.exe -u admin:admin123 -X POST "http://localhost:8080/api/produse" `
+  -H "Content-Type: application/json" `
+  -d "{\"nume\":\"Paine\",\"categorie\":\"ALIMENTAR\",\"pret\":5,\"cantitateStoc\":20,\"codEan\":\"12345670\"}"
+```
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8080/api/produse" -Method Post `
+  -Headers @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin123")) } `
+  -ContentType "application/json; charset=utf-8" `
+  -Body '{"nume":"Paine","categorie":"ALIMENTAR","pret":5,"cantitateStoc":20,"codEan":"12345670"}'
+```
+
+List products:
+
+```powershell
+curl.exe http://localhost:8080/api/produse
+```
+
 ## Profiles
+
+You do **not** need to edit `application.properties` to switch databases (unlike older setups that
+commented H2 vs MySQL lines). Use Spring profiles:
 
 | Profile | When | Database |
 |---|---|---|
 | `dev` (default) | `mvn spring-boot:run` | H2 in-memory |
 | `docker` | Docker Compose sets `SPRING_PROFILES_ACTIVE=docker` | MySQL |
 
+**Linux / macOS:**
+
 ```bash
 # local H2 (default)
 mvn spring-boot:run
 
-# local MySQL
+# app on host + MySQL (MySQL must already be running, e.g. via Compose)
 SPRING_PROFILES_ACTIVE=docker mvn spring-boot:run
 ```
 
+**Windows PowerShell:**
+
+```powershell
+# local H2 (default) — requires JDK 21 + Maven on PATH
+mvn spring-boot:run
+
+# app on host + MySQL
+$env:SPRING_PROFILES_ACTIVE = "docker"
+mvn spring-boot:run
+```
+
+If PowerShell says `mvn` is not recognized, install JDK 21 and Maven (or use Chocolatey:
+`choco install openjdk21 maven`), reopen the terminal, and run `mvn -version`.
+Alternatively skip Maven on the host and use Docker Compose below.
+
 ## Credentials
 
-Configure via environment variables (do not commit production secrets):
+Configure via environment variables (do not commit production secrets).
+A `.env` file is **optional** — defaults work for local demos.
 
 | Variable | Default (local demo) |
 |---|---|
@@ -96,6 +139,14 @@ Configure via environment variables (do not commit production secrets):
 | `APP_ADMIN_PASSWORD` | `admin123` |
 | `MYSQL_ROOT_PASSWORD` | `parola_root` |
 | `SPRING_DATASOURCE_*` | see `application-docker.properties` |
+
+Optional project-root `.env` for Docker Compose overrides:
+
+```env
+MYSQL_ROOT_PASSWORD=parola_root
+APP_ADMIN_USERNAME=admin
+APP_ADMIN_PASSWORD=admin123
+```
 
 ## Running the tests
 
@@ -131,17 +182,22 @@ Both scripts authenticate with `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD`.
 
 ## Running with Docker (persistent data)
 
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/macOS) or Docker Engine (Linux).
+
 ```bash
 docker compose up --build
 ```
 
-Starts MySQL, phpMyAdmin (`http://localhost:8081`), and the app (`http://localhost:8080`)
-with profile `docker`. Override passwords with `MYSQL_ROOT_PASSWORD` and `APP_ADMIN_PASSWORD`.
+Same command works in PowerShell. Starts MySQL, phpMyAdmin (`http://localhost:8081`), and the app
+(`http://localhost:8080`) with profile `docker`. Override passwords via a `.env` file or
+`MYSQL_ROOT_PASSWORD` / `APP_ADMIN_PASSWORD`.
 
 ```bash
 docker compose down      # keep data
 docker compose down -v  # also remove the MySQL volume
 ```
+
+H2 data is not migrated when you switch to Docker/MySQL — re-seed products if needed.
 
 ## Running locally without Docker
 
