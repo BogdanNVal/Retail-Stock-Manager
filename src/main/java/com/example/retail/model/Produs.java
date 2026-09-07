@@ -15,6 +15,9 @@ public class Produs {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long version;
+
     @NotBlank(message = "Numele este obligatoriu")
     @Column(nullable = false)
     private String nume;
@@ -47,14 +50,20 @@ public class Produs {
         this.codEan = codEan;
     }
 
-    // Getters & Setters
-
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public String getNume() {

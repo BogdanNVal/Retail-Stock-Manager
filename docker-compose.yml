@@ -6,13 +6,13 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: retail_stock
-      MYSQL_ROOT_PASSWORD: parola_root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-parola_root}
     ports:
       - "3306:3306"
     volumes:
       - retail-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pparola_root"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-parola_root}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -27,7 +27,7 @@ services:
     environment:
       PMA_HOST: mysql
       PMA_USER: root
-      PMA_PASSWORD: parola_root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-parola_root}
     ports:
       - "8081:80"
 
@@ -39,9 +39,12 @@ services:
       mysql:
         condition: service_healthy
     environment:
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/retail_stock?createDatabaseIfNotExist=true
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: parola_root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-parola_root}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-admin123}
     ports:
       - "8080:8080"
 

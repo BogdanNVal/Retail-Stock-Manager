@@ -25,9 +25,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
-/// Teste de integrare (fara baza de date reala) pentru fluxul de vanzare.
-
 @WebMvcTest(VanzareController.class)
 @Import(SecurityConfig.class)
 class VanzareControllerTest {
@@ -49,40 +46,54 @@ class VanzareControllerTest {
 
     @Test
     @WithMockUser
-    void vinde_cuDateValide_afiseazaBonulSiTotalurile() throws Exception {
+    void vinde_cuDateValide_redirectioneazaLaBon() throws Exception {
         Produs paine = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.TEN, 20, "12345670");
         paine.setId(1L);
 
         Bon bon = new Bon();
+        bon.setId(42L);
         bon.adaugaLinie(new Vanzare(paine, 2, BigDecimal.valueOf(20), BigDecimal.ZERO, BigDecimal.valueOf(20)));
 
         when(produsService.inregistreazaBon(anyList(), anyList())).thenReturn(bon);
-        when(produsService.listaProduse()).thenReturn(List.of(paine));
 
         mockMvc.perform(post("/casa-de-marcat/vinde")
                         .with(csrf())
                         .param("produsId", "1")
                         .param("cantitate", "2"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("casa-marcat"))
-                .andExpect(model().attributeExists("bon"))
-                .andExpect(model().attributeDoesNotExist("eroare"));
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/casa-de-marcat/42"));
     }
 
     @Test
     @WithMockUser
-    void vinde_cuStocInsuficient_afiseazaEroareInLocSaCrapeAplicatia() throws Exception {
+    void vinde_cuStocInsuficient_redirectioneazaCuEroare() throws Exception {
         when(produsService.inregistreazaBon(anyList(), anyList()))
                 .thenThrow(new IllegalStateException("Stoc insuficient pentru Paine"));
-        when(produsService.listaProduse()).thenReturn(List.of());
 
         mockMvc.perform(post("/casa-de-marcat/vinde")
                         .with(csrf())
                         .param("produsId", "1")
                         .param("cantitate", "999"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/casa-de-marcat"))
+                .andExpect(flash().attributeExists("eroare"));
+    }
+
+    @Test
+    @WithMockUser
+    void veziBon_afiseazaBonul() throws Exception {
+        Produs paine = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.TEN, 20, "12345670");
+        paine.setId(1L);
+        Bon bon = new Bon();
+        bon.setId(7L);
+        bon.adaugaLinie(new Vanzare(paine, 1, BigDecimal.TEN, BigDecimal.ZERO, BigDecimal.TEN));
+
+        when(produsService.obtineBon(7L)).thenReturn(bon);
+        when(produsService.listaProduse()).thenReturn(List.of(paine));
+
+        mockMvc.perform(get("/casa-de-marcat/7"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("casa-marcat"))
-                .andExpect(model().attributeExists("eroare"))
-                .andExpect(model().attributeDoesNotExist("bon"));
+                .andExpect(model().attributeExists("bon"));
     }
 }

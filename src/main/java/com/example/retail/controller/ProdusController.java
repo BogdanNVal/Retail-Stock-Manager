@@ -3,7 +3,10 @@ package com.example.retail.controller;
 import com.example.retail.model.Categorie;
 import com.example.retail.model.Produs;
 import com.example.retail.service.ProdusService;
+import com.example.retail.service.ResourceNotFoundException;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -27,31 +30,53 @@ public class ProdusController {
     @GetMapping
     public String listaProduse(Model model) {
         model.addAttribute("produse", produsService.listaProduse());
-        return "produse-list"; // -> WEB-INF/jsp/produse-list.jsp
+        return "produse-list";
     }
 
     @GetMapping("/nou")
     public String formularProdusNou(Model model) {
         model.addAttribute("produs", new Produs());
         model.addAttribute("categorii", Categorie.values());
+        model.addAttribute("titluFormular", "Adauga produs");
+        return "produs-form";
+    }
+
+    @GetMapping("/{id}/editeaza")
+    public String formularEditare(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            model.addAttribute("produs", produsService.obtineProdus(id));
+        } catch (ResourceNotFoundException ex) {
+            redirectAttributes.addFlashAttribute("eroareStergere", ex.getMessage());
+            return "redirect:/produse";
+        }
+        model.addAttribute("categorii", Categorie.values());
+        model.addAttribute("titluFormular", "Editeaza produs");
         return "produs-form";
     }
 
     @PostMapping("/salveaza")
     public String salveazaProdus(@Valid @ModelAttribute Produs produs, BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("categorii", Categorie.values());
-            model.addAttribute("erori", extrageMesajeEroare(bindingResult));
-            return "produs-form";
+            return reafiseazaFormular(produs, model, extrageMesajeEroare(bindingResult));
         }
 
         try {
-            produsService.salveazaProdus(produs);
-        } catch (IllegalArgumentException ex) {
-            // cod EAN invalid (checksum) - validat in service
-            model.addAttribute("categorii", Categorie.values());
-            model.addAttribute("erori", List.of(ex.getMessage()));
-            return "produs-form";
+            if (produs.getId() == null) {
+                produsService.salveazaProdus(produs);
+            } else {
+                produsService.actualizeazaProdus(produs.getId(), produs);
+            }
+        } catch (IllegalArgumentException | ObjectOptimisticLockingFailureException
+                 | DataIntegrityViolationException | ResourceNotFoundException ex) {
+            String mesaj;
+            if (ex instanceof ObjectOptimisticLockingFailureException) {
+                mesaj = "Datele au fost modificate de alt utilizator. Reincarca formularul si incearca din nou.";
+            } else if (ex instanceof DataIntegrityViolationException) {
+                mesaj = "Conflict de date (de exemplu cod EAN duplicat).";
+            } else {
+                mesaj = ex.getMessage();
+            }
+            return reafiseazaFormular(produs, model, List.of(mesaj));
         }
 
         return "redirect:/produse";
@@ -65,6 +90,13 @@ public class ProdusController {
             redirectAttributes.addFlashAttribute("eroareStergere", ex.getMessage());
         }
         return "redirect:/produse";
+    }
+
+    private String reafiseazaFormular(Produs produs, Model model, List<String> erori) {
+        model.addAttribute("categorii", Categorie.values());
+        model.addAttribute("erori", erori);
+        model.addAttribute("titluFormular", produs.getId() == null ? "Adauga produs" : "Editeaza produs");
+        return "produs-form";
     }
 
     private List<String> extrageMesajeEroare(BindingResult bindingResult) {

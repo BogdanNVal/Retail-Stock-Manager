@@ -7,8 +7,6 @@ import com.example.retail.service.ProdusService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +15,7 @@ import java.util.stream.Collectors;
 /**
  * REST API pentru gestiunea produselor (raspunde in JSON).
  * Separat de ProdusController, care serveste pagini JSP pentru interfata web.
+ * Mutating endpoints require authentication (HTTP Basic or session).
  */
 @RestController
 @RequestMapping("/api/produse")
@@ -42,15 +41,16 @@ public class ProdusRestController {
 
     @PostMapping
     public ResponseEntity<ProdusResponse> creeazaProdus(@Valid @RequestBody ProdusRequest request) {
-        Produs produs = new Produs(
-                request.getNume(),
-                request.getCategorie(),
-                request.getPret(),
-                request.getCantitateStoc(),
-                request.getCodEan()
-        );
+        Produs produs = toEntity(request);
         Produs salvat = produsService.salveazaProdus(produs);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ProdusResponse(salvat));
+    }
+
+    @PutMapping("/{id}")
+    public ProdusResponse actualizeazaProdus(@PathVariable Long id,
+                                             @Valid @RequestBody ProdusRequest request) {
+        Produs actualizat = produsService.actualizeazaProdus(id, toEntity(request));
+        return new ProdusResponse(actualizat);
     }
 
     @DeleteMapping("/{id}")
@@ -59,18 +59,15 @@ public class ProdusRestController {
         return ResponseEntity.noContent().build();
     }
 
-    /// Erorile de validare (cod EAN invalid, produs inexistent) transformate intr-un raspuns JSON cu status HTTP
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> trateazaEroareValidare(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
-    }
-
-     /// Erorile de validare @Valid (nume gol, pret negativ etc.)
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> trateazaEroareValidareCamp(MethodArgumentNotValidException ex) {
-        String mesaj = ex.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
-                .collect(Collectors.joining("; "));
-        return ResponseEntity.badRequest().body(mesaj);
+    private static Produs toEntity(ProdusRequest request) {
+        Produs produs = new Produs(
+                request.getNume(),
+                request.getCategorie(),
+                request.getPret(),
+                request.getCantitateStoc(),
+                request.getCodEan()
+        );
+        produs.setVersion(request.getVersion());
+        return produs;
     }
 }

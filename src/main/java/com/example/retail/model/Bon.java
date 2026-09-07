@@ -24,6 +24,12 @@ public class Bon {
 
     private BigDecimal totalCuDiscount = BigDecimal.ZERO;
 
+    private BigDecimal totalTva = BigDecimal.ZERO;
+
+    private BigDecimal totalCuTva = BigDecimal.ZERO;
+
+    private int procentTva;
+
     private LocalDateTime dataBon = LocalDateTime.now();
 
     public Bon() {
@@ -36,6 +42,10 @@ public class Bon {
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public List<Vanzare> getLinii() {
@@ -64,6 +74,30 @@ public class Bon {
 
     public void setTotalCuDiscount(BigDecimal totalCuDiscount) {
         this.totalCuDiscount = totalCuDiscount;
+    }
+
+    public BigDecimal getTotalTva() {
+        return totalTva;
+    }
+
+    public void setTotalTva(BigDecimal totalTva) {
+        this.totalTva = totalTva;
+    }
+
+    public BigDecimal getTotalCuTva() {
+        return totalCuTva;
+    }
+
+    public void setTotalCuTva(BigDecimal totalCuTva) {
+        this.totalCuTva = totalCuTva;
+    }
+
+    public int getProcentTva() {
+        return procentTva;
+    }
+
+    public void setProcentTva(int procentTva) {
+        this.procentTva = procentTva;
     }
 
     public LocalDateTime getDataBon() {

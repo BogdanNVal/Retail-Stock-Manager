@@ -15,9 +15,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 
-
- ///Genereaza un bon de vanzare in format PDF, folosind libraria iText.
-
+/**
+ * Genereaza un bon de vanzare in format PDF, folosind libraria iText.
+ */
 @Service
 public class PdfBonService {
 
@@ -57,7 +57,9 @@ public class PdfBonService {
             document.add(new Paragraph(" "));
             document.add(new Paragraph("Subtotal: " + bon.getTotalFaraDiscount() + " lei"));
             document.add(new Paragraph("Discount total: " + bon.getTotalDiscount() + " lei"));
-            document.add(new Paragraph("Total de plata: " + bon.getTotalCuDiscount() + " lei").setBold());
+            document.add(new Paragraph("Total cu discount: " + bon.getTotalCuDiscount() + " lei"));
+            document.add(new Paragraph("TVA (" + bon.getProcentTva() + "%): " + bon.getTotalTva() + " lei"));
+            document.add(new Paragraph("Total de plata (cu TVA): " + bon.getTotalCuTva() + " lei").setBold());
         } catch (IOException e) {
             throw new PdfGenerationException("Nu s-a putut genera bonul PDF pentru bonul #" + bon.getId(), e);
         }
