@@ -89,7 +89,9 @@ class ProdusServiceTest {
     void actualizeazaProdus_actualizeazaCampurile() {
         Produs existent = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(5), 10, "12345670");
         existent.setId(1L);
+        existent.setVersion(1L);
         Produs dateNoi = new Produs("Paine integrala", Categorie.ALIMENTAR, BigDecimal.valueOf(6), 12, "12345670");
+        dateNoi.setVersion(1L);
 
         when(produsRepository.findById(1L)).thenReturn(Optional.of(existent));
         when(produsRepository.existsByCodEanAndIdNot("12345670", 1L)).thenReturn(false);
@@ -100,6 +102,20 @@ class ProdusServiceTest {
         assertEquals("Paine integrala", rezultat.getNume());
         assertEquals(0, BigDecimal.valueOf(6).compareTo(rezultat.getPret()));
         assertEquals(12, rezultat.getCantitateStoc());
+    }
+
+    @Test
+    void actualizeazaProdus_faraVersiune_aruncaOptimisticLock() {
+        Produs existent = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(5), 10, "12345670");
+        existent.setId(1L);
+        existent.setVersion(1L);
+        Produs dateNoi = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(5), 99, "12345670");
+
+        when(produsRepository.findById(1L)).thenReturn(Optional.of(existent));
+
+        assertThrows(ObjectOptimisticLockingFailureException.class,
+                () -> produsService.actualizeazaProdus(1L, dateNoi));
+        verify(produsRepository, never()).save(any());
     }
 
     @Test
@@ -200,6 +216,7 @@ class ProdusServiceTest {
 
     @Test
     void stergeProdus_cuVanzariAsociate_aruncaExceptieSiNuSterge() {
+        when(produsRepository.existsById(1L)).thenReturn(true);
         when(vanzareRepository.existsByProdusId(1L)).thenReturn(true);
 
         IllegalStateException exceptie = assertThrows(IllegalStateException.class,
@@ -211,10 +228,19 @@ class ProdusServiceTest {
 
     @Test
     void stergeProdus_faraVanzariAsociate_esteSters() {
+        when(produsRepository.existsById(1L)).thenReturn(true);
         when(vanzareRepository.existsByProdusId(1L)).thenReturn(false);
 
         produsService.stergeProdus(1L);
 
         verify(produsRepository).deleteById(1L);
+    }
+
+    @Test
+    void stergeProdus_inexistent_aruncaNotFound() {
+        when(produsRepository.existsById(99L)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () -> produsService.stergeProdus(99L));
+        verify(produsRepository, never()).deleteById(any());
     }
 }

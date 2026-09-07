@@ -57,7 +57,7 @@ TVA is applied on the discounted total using `AppConfigSingleton.NivelTva` (defa
 | `GET` | `/api/produse` | public | list products |
 | `GET` | `/api/produse/{id}` | public | product details |
 | `POST` | `/api/produse` | required | create product |
-| `PUT` | `/api/produse/{id}` | required | update product |
+| `PUT` | `/api/produse/{id}` | required | update product (**`version` required** for optimistic locking) |
 | `DELETE` | `/api/produse/{id}` | required | delete product |
 
 Mutating endpoints accept HTTP Basic or an authenticated browser session.

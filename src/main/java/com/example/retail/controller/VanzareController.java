@@ -13,6 +13,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -34,21 +35,33 @@ public class VanzareController {
         return "casa-marcat";
     }
 
+    @GetMapping("/{id}")
+    public String veziBon(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            model.addAttribute("bon", produsService.obtineBon(id));
+        } catch (ResourceNotFoundException ex) {
+            redirectAttributes.addFlashAttribute("eroare", ex.getMessage());
+            return "redirect:/casa-de-marcat";
+        }
+        model.addAttribute("produse", produsService.listaProduse());
+        return "casa-marcat";
+    }
+
     @PostMapping("/vinde")
     public String vinde(@RequestParam("produsId") List<Long> produsIds,
                         @RequestParam("cantitate") List<Integer> cantitati,
-                        Model model) {
+                        RedirectAttributes redirectAttributes) {
         try {
-            model.addAttribute("bon", produsService.inregistreazaBon(produsIds, cantitati));
+            Bon bon = produsService.inregistreazaBon(produsIds, cantitati);
+            return "redirect:/casa-de-marcat/" + bon.getId();
         } catch (IllegalArgumentException | IllegalStateException | ResourceNotFoundException
                  | ObjectOptimisticLockingFailureException ex) {
             String mesaj = ex instanceof ObjectOptimisticLockingFailureException
                     ? "Stocul a fost modificat intre timp. Reincearca vanzarea."
                     : ex.getMessage();
-            model.addAttribute("eroare", mesaj);
+            redirectAttributes.addFlashAttribute("eroare", mesaj);
+            return "redirect:/casa-de-marcat";
         }
-        model.addAttribute("produse", produsService.listaProduse());
-        return "casa-marcat";
     }
 
     @GetMapping("/{id}/bon-pdf")

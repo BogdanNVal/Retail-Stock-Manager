@@ -65,7 +65,8 @@ public class ProdusService {
     @Transactional
     public Produs actualizeazaProdus(Long id, Produs dateNoi) {
         Produs existent = obtineProdus(id);
-        if (dateNoi.getVersion() != null && !Objects.equals(dateNoi.getVersion(), existent.getVersion())) {
+        // Version is required so REST clients cannot silently overwrite concurrent stock changes.
+        if (dateNoi.getVersion() == null || !Objects.equals(dateNoi.getVersion(), existent.getVersion())) {
             throw new ObjectOptimisticLockingFailureException(Produs.class, id);
         }
         valideazaEan(dateNoi.getCodEan());
@@ -82,6 +83,9 @@ public class ProdusService {
     }
 
     public void stergeProdus(Long id) {
+        if (!produsRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Produs inexistent cu id: " + id);
+        }
         if (vanzareRepository.existsByProdusId(id)) {
             throw new IllegalStateException(
                     "Produsul nu poate fi sters, pentru ca are vanzari inregistrate pe numele lui. " +

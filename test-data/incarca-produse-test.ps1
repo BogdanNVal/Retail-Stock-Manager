@@ -23,6 +23,7 @@ $headers = @{
 
 Write-Host "Se incarca $($produse.Count) produse in $baseUrl/api/produse ..." -ForegroundColor Cyan
 
+$failures = 0
 foreach ($produs in $produse) {
     $body = $produs | ConvertTo-Json
 
@@ -32,7 +33,13 @@ foreach ($produs in $produse) {
     }
     catch {
         Write-Host "EROARE -> $($produs.nume): $($_.Exception.Message)" -ForegroundColor Red
+        $failures++
     }
+}
+
+if ($failures -gt 0) {
+    Write-Host "Finalizat cu $failures erori." -ForegroundColor Red
+    exit 1
 }
 
 Write-Host "Gata. Verifica lista completa la $baseUrl/api/produse sau $baseUrl/produse" -ForegroundColor Cyan

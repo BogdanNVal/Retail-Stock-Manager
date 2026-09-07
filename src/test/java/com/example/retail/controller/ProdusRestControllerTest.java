@@ -135,6 +135,16 @@ class ProdusRestControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
+    void stergeProdus_inexistent_returneaza404() throws Exception {
+        doThrow(new ResourceNotFoundException("Produs inexistent cu id: 999"))
+                .when(produsService).stergeProdus(999L);
+
+        mockMvc.perform(delete("/api/produse/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void actualizeazaProdus_cuVersiuneInvechita_returneazaConflict() throws Exception {
         ProdusRequest request = requestValid();
         request.setVersion(0L);

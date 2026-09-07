@@ -25,7 +25,8 @@ fi
 count="$(jq 'length' "$JSON_FILE")"
 echo "Se incarca $count produse in $BASE_URL/api/produse ..."
 
-jq -c '.[]' "$JSON_FILE" | while read -r produs; do
+failures=0
+while read -r produs; do
   nume="$(echo "$produs" | jq -r '.nume')"
   if curl -sS -f -u "$USER:$PASS" -H "Content-Type: application/json" \
       -d "$produs" "$BASE_URL/api/produse" >/tmp/retail-seed-response.json; then
@@ -33,7 +34,13 @@ jq -c '.[]' "$JSON_FILE" | while read -r produs; do
     echo "OK   -> $nume${id:+ (id: $id)}"
   else
     echo "EROARE -> $nume (HTTP failure; vezi autentificare sau EAN duplicat)"
+    failures=$((failures + 1))
   fi
-done
+done < <(jq -c '.[]' "$JSON_FILE")
+
+if [[ "$failures" -gt 0 ]]; then
+  echo "Finalizat cu $failures erori." >&2
+  exit 1
+fi
 
 echo "Gata. Verifica la $BASE_URL/api/produse sau $BASE_URL/produse"

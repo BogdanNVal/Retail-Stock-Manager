@@ -66,12 +66,16 @@ public class ProdusController {
             } else {
                 produsService.actualizeazaProdus(produs.getId(), produs);
             }
-        } catch (IllegalArgumentException | ObjectOptimisticLockingFailureException | DataIntegrityViolationException ex) {
-            String mesaj = ex instanceof ObjectOptimisticLockingFailureException
-                    ? "Datele au fost modificate de alt utilizator. Reincarca formularul si incearca din nou."
-                    : (ex instanceof DataIntegrityViolationException
-                    ? "Conflict de date (de exemplu cod EAN duplicat)."
-                    : ex.getMessage());
+        } catch (IllegalArgumentException | ObjectOptimisticLockingFailureException
+                 | DataIntegrityViolationException | ResourceNotFoundException ex) {
+            String mesaj;
+            if (ex instanceof ObjectOptimisticLockingFailureException) {
+                mesaj = "Datele au fost modificate de alt utilizator. Reincarca formularul si incearca din nou.";
+            } else if (ex instanceof DataIntegrityViolationException) {
+                mesaj = "Conflict de date (de exemplu cod EAN duplicat).";
+            } else {
+                mesaj = ex.getMessage();
+            }
             return reafiseazaFormular(produs, model, List.of(mesaj));
         }
 

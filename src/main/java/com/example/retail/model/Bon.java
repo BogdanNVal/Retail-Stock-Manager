@@ -44,6 +44,10 @@ public class Bon {
         return id;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public List<Vanzare> getLinii() {
         return linii;
     }
