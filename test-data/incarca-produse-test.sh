@@ -27,12 +27,12 @@ echo "Se incarca $count produse in $BASE_URL/api/produse ..."
 
 jq -c '.[]' "$JSON_FILE" | while read -r produs; do
   nume="$(echo "$produs" | jq -r '.nume')"
-  if curl -sS -u "$USER:$PASS" -H "Content-Type: application/json" \
+  if curl -sS -f -u "$USER:$PASS" -H "Content-Type: application/json" \
       -d "$produs" "$BASE_URL/api/produse" >/tmp/retail-seed-response.json; then
     id="$(jq -r '.id // empty' /tmp/retail-seed-response.json 2>/dev/null || true)"
     echo "OK   -> $nume${id:+ (id: $id)}"
   else
-    echo "EROARE -> $nume"
+    echo "EROARE -> $nume (HTTP failure; vezi autentificare sau EAN duplicat)"
   fi
 done
 

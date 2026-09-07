@@ -60,12 +60,14 @@ public class ProdusRestController {
     }
 
     private static Produs toEntity(ProdusRequest request) {
-        return new Produs(
+        Produs produs = new Produs(
                 request.getNume(),
                 request.getCategorie(),
                 request.getPret(),
                 request.getCantitateStoc(),
                 request.getCodEan()
         );
+        produs.setVersion(request.getVersion());
+        return produs;
     }
 }

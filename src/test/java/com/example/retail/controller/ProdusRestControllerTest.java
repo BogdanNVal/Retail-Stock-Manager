@@ -5,6 +5,7 @@ import com.example.retail.model.Categorie;
 import com.example.retail.model.Produs;
 import com.example.retail.security.SecurityConfig;
 import com.example.retail.service.ProdusService;
+import com.example.retail.service.ResourceNotFoundException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -53,6 +55,15 @@ class ProdusRestControllerTest {
         mockMvc.perform(get("/api/produse"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nume").value("Paine"));
+    }
+
+    @Test
+    void obtineProdus_inexistent_returneaza404() throws Exception {
+        when(produsService.obtineProdus(999L))
+                .thenThrow(new ResourceNotFoundException("Produs inexistent cu id: 999"));
+
+        mockMvc.perform(get("/api/produse/999"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -121,6 +132,20 @@ class ProdusRestControllerTest {
                 .andExpect(status().isCreated());
 
         verify(produsService).salveazaProdus(any(Produs.class));
+    }
+
+    @Test
+    void actualizeazaProdus_cuVersiuneInvechita_returneazaConflict() throws Exception {
+        ProdusRequest request = requestValid();
+        request.setVersion(0L);
+        when(produsService.actualizeazaProdus(eq(1L), any(Produs.class)))
+                .thenThrow(new ObjectOptimisticLockingFailureException(Produs.class, 1L));
+
+        mockMvc.perform(put("/api/produse/1")
+                        .with(httpBasic("admin", "admin123"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
     }
 
     private static ProdusRequest requestValid() {

@@ -3,7 +3,10 @@ package com.example.retail.controller;
 import com.example.retail.model.Categorie;
 import com.example.retail.model.Produs;
 import com.example.retail.service.ProdusService;
+import com.example.retail.service.ResourceNotFoundException;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -39,8 +42,13 @@ public class ProdusController {
     }
 
     @GetMapping("/{id}/editeaza")
-    public String formularEditare(@PathVariable Long id, Model model) {
-        model.addAttribute("produs", produsService.obtineProdus(id));
+    public String formularEditare(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        try {
+            model.addAttribute("produs", produsService.obtineProdus(id));
+        } catch (ResourceNotFoundException ex) {
+            redirectAttributes.addFlashAttribute("eroareStergere", ex.getMessage());
+            return "redirect:/produse";
+        }
         model.addAttribute("categorii", Categorie.values());
         model.addAttribute("titluFormular", "Editeaza produs");
         return "produs-form";
@@ -49,10 +57,7 @@ public class ProdusController {
     @PostMapping("/salveaza")
     public String salveazaProdus(@Valid @ModelAttribute Produs produs, BindingResult bindingResult, Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("categorii", Categorie.values());
-            model.addAttribute("erori", extrageMesajeEroare(bindingResult));
-            model.addAttribute("titluFormular", produs.getId() == null ? "Adauga produs" : "Editeaza produs");
-            return "produs-form";
+            return reafiseazaFormular(produs, model, extrageMesajeEroare(bindingResult));
         }
 
         try {
@@ -61,11 +66,13 @@ public class ProdusController {
             } else {
                 produsService.actualizeazaProdus(produs.getId(), produs);
             }
-        } catch (IllegalArgumentException ex) {
-            model.addAttribute("categorii", Categorie.values());
-            model.addAttribute("erori", List.of(ex.getMessage()));
-            model.addAttribute("titluFormular", produs.getId() == null ? "Adauga produs" : "Editeaza produs");
-            return "produs-form";
+        } catch (IllegalArgumentException | ObjectOptimisticLockingFailureException | DataIntegrityViolationException ex) {
+            String mesaj = ex instanceof ObjectOptimisticLockingFailureException
+                    ? "Datele au fost modificate de alt utilizator. Reincarca formularul si incearca din nou."
+                    : (ex instanceof DataIntegrityViolationException
+                    ? "Conflict de date (de exemplu cod EAN duplicat)."
+                    : ex.getMessage());
+            return reafiseazaFormular(produs, model, List.of(mesaj));
         }
 
         return "redirect:/produse";
@@ -79,6 +86,13 @@ public class ProdusController {
             redirectAttributes.addFlashAttribute("eroareStergere", ex.getMessage());
         }
         return "redirect:/produse";
+    }
+
+    private String reafiseazaFormular(Produs produs, Model model, List<String> erori) {
+        model.addAttribute("categorii", Categorie.values());
+        model.addAttribute("erori", erori);
+        model.addAttribute("titluFormular", produs.getId() == null ? "Adauga produs" : "Editeaza produs");
+        return "produs-form";
     }
 
     private List<String> extrageMesajeEroare(BindingResult bindingResult) {

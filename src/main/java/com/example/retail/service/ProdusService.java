@@ -9,6 +9,7 @@ import com.example.retail.repository.BonRepository;
 import com.example.retail.repository.ProdusRepository;
 import com.example.retail.repository.VanzareRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class ProdusService {
@@ -48,7 +50,7 @@ public class ProdusService {
 
     public Produs obtineProdus(Long id) {
         return produsRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Produs inexistent cu id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Produs inexistent cu id: " + id));
     }
 
     @Transactional
@@ -63,6 +65,9 @@ public class ProdusService {
     @Transactional
     public Produs actualizeazaProdus(Long id, Produs dateNoi) {
         Produs existent = obtineProdus(id);
+        if (dateNoi.getVersion() != null && !Objects.equals(dateNoi.getVersion(), existent.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(Produs.class, id);
+        }
         valideazaEan(dateNoi.getCodEan());
         if (produsRepository.existsByCodEanAndIdNot(dateNoi.getCodEan(), id)) {
             throw new IllegalArgumentException("Cod EAN deja folosit: " + dateNoi.getCodEan());
@@ -90,9 +95,10 @@ public class ProdusService {
      * Kept for unit tests that exercise discount/stock logic in isolation;
      * the UI and production checkout path use {@link #inregistreazaBon}.
      */
+    @Transactional
     public Vanzare inregistreazaVanzare(Long produsId, int cantitate) {
         Produs produs = produsRepository.findById(produsId)
-                .orElseThrow(() -> new IllegalArgumentException("Produs inexistent"));
+                .orElseThrow(() -> new ResourceNotFoundException("Produs inexistent cu id: " + produsId));
 
         Vanzare linie = proceseazaLinie(produs, cantitate);
         return vanzareRepository.save(linie);
@@ -100,7 +106,7 @@ public class ProdusService {
 
     public Vanzare obtineVanzare(Long id) {
         return vanzareRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Vanzare inexistenta cu id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Vanzare inexistenta cu id: " + id));
     }
 
     @Transactional
@@ -123,7 +129,7 @@ public class ProdusService {
 
         for (Map.Entry<Long, Integer> intrare : cantitatiCombinate.entrySet()) {
             Produs produs = produsRepository.findById(intrare.getKey())
-                    .orElseThrow(() -> new IllegalArgumentException("Produs inexistent"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Produs inexistent cu id: " + intrare.getKey()));
 
             Vanzare linie = proceseazaLinie(produs, intrare.getValue());
             bon.adaugaLinie(linie);
@@ -150,7 +156,7 @@ public class ProdusService {
 
     public Bon obtineBon(Long id) {
         return bonRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bon inexistent cu id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Bon inexistent cu id: " + id));
     }
 
     private void valideazaEan(String codEan) {

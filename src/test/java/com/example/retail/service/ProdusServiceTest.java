@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -101,6 +103,21 @@ class ProdusServiceTest {
     }
 
     @Test
+    void actualizeazaProdus_cuVersiuneInvechita_aruncaOptimisticLock() {
+        Produs existent = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(5), 10, "12345670");
+        existent.setId(1L);
+        existent.setVersion(2L);
+        Produs dateNoi = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(5), 10, "12345670");
+        dateNoi.setVersion(1L);
+
+        when(produsRepository.findById(1L)).thenReturn(Optional.of(existent));
+
+        assertThrows(ObjectOptimisticLockingFailureException.class,
+                () -> produsService.actualizeazaProdus(1L, dateNoi));
+        verify(produsRepository, never()).save(any());
+    }
+
+    @Test
     void inregistreazaVanzare_cuStocInsuficient_aruncaExceptie() {
         Produs produs = new Produs("Lapte", Categorie.ALIMENTAR, BigDecimal.valueOf(10), 2, "12345670");
         produs.setId(1L);
@@ -130,7 +147,7 @@ class ProdusServiceTest {
     void inregistreazaVanzare_produsInexistent_aruncaExceptie() {
         when(produsRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ResourceNotFoundException.class,
                 () -> produsService.inregistreazaVanzare(99L, 1));
     }
 

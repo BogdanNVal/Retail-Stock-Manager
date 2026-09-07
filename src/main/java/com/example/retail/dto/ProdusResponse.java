@@ -12,6 +12,7 @@ public class ProdusResponse {
     private BigDecimal pret;
     private int cantitateStoc;
     private String codEan;
+    private Long version;
 
     public ProdusResponse(Produs produs) {
         this.id = produs.getId();
@@ -20,6 +21,7 @@ public class ProdusResponse {
         this.pret = produs.getPret();
         this.cantitateStoc = produs.getCantitateStoc();
         this.codEan = produs.getCodEan();
+        this.version = produs.getVersion();
     }
 
     public Long getId() {
@@ -44,5 +46,9 @@ public class ProdusResponse {
 
     public String getCodEan() {
         return codEan;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

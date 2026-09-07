@@ -30,6 +30,9 @@ public class ProdusRequest {
     @NotBlank(message = "Codul EAN este obligatoriu")
     private String codEan;
 
+    /** Optional optimistic-lock token; when present on PUT, must match the current entity version. */
+    private Long version;
+
     public ProdusRequest() {
     }
 
@@ -71,5 +74,13 @@ public class ProdusRequest {
 
     public void setCodEan(String codEan) {
         this.codEan = codEan;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 }
