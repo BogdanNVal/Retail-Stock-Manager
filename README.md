@@ -8,6 +8,20 @@ Web application for managing the stock of a retail store — a Java/Spring Boot 
 of the desktop project [Store Management System (C#/WinForms)](https://github.com/BogdanNVal/c-sharp),
 extended with sales, discounts, VAT (TVA), and authentication.
 
+## Screenshots
+
+### Home
+
+![Home page](docs/screenshots/home.png)
+
+### Product list (CRUD)
+
+![Product list](docs/screenshots/produse.png)
+
+### Checkout with discount, TVA, and PDF receipt
+
+![Checkout / casa de marcat](docs/screenshots/casa-marcat.png)
+
 ## Technologies
 
 - **Java 21 LTS + Spring Boot 3** (Spring MVC, Spring Data JPA, Spring Security)
