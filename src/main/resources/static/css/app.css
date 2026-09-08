@@ -230,6 +230,20 @@ button.btn-danger {
     background: var(--danger);
 }
 
+.site-nav button,
+.site-nav button[type="submit"] {
+    background: transparent;
+    border: 1px solid #7d8d82;
+    color: #cdd6cf;
+    padding: 4px 10px;
+}
+
+.site-nav button:hover,
+.site-nav button[type="submit"]:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
 .form-grid label {
     display: block;
     margin: 12px 0 4px;
