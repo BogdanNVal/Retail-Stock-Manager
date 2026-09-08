@@ -68,13 +68,43 @@ public final class DatabaseUrls {
                 jdbc.append(uri.getRawPath());
             }
             if (uri.getRawQuery() != null) {
-                jdbc.append('?').append(uri.getRawQuery());
+                String query = sanitizeQuery(uri.getRawQuery());
+                if (!query.isEmpty()) {
+                    jdbc.append('?').append(query);
+                }
             }
             return new Parsed(jdbc.toString(), username, password);
         } catch (URISyntaxException ex) {
             String fallback = jdbcIfUnchanged != null ? jdbcIfUnchanged : toJdbcPrefix(postgresqlUri);
             return new Parsed(fallback, null, null);
         }
+    }
+
+    /**
+     * Neon often appends libpq-only {@code channel_binding=require}. Spring Boot 3.2's
+     * pgJDBC (42.6.x) does not use that name ({@code channelBinding}); leave it in the
+     * URL and some drivers warn or stall. Keep {@code sslmode=require}.
+     */
+    static String sanitizeQuery(String rawQuery) {
+        StringBuilder out = new StringBuilder();
+        for (String part : rawQuery.split("&")) {
+            if (part.isEmpty()) {
+                continue;
+            }
+            String key = part;
+            int eq = part.indexOf('=');
+            if (eq >= 0) {
+                key = part.substring(0, eq);
+            }
+            if ("channel_binding".equalsIgnoreCase(key) || "channelBinding".equalsIgnoreCase(key)) {
+                continue;
+            }
+            if (out.length() > 0) {
+                out.append('&');
+            }
+            out.append(part);
+        }
+        return out.toString();
     }
 
     private static String toJdbcPrefix(String postgresqlUri) {

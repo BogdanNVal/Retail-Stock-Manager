@@ -27,6 +27,15 @@ class DatabaseUrlsTest {
     }
 
     @Test
+    void neonChannelBinding_esteEliminatDinJdbc() {
+        DatabaseUrls.Parsed parsed = DatabaseUrls.parse(
+                "postgresql://retail:secret@ep-demo.neon.tech/neondb?sslmode=require&channel_binding=require");
+        assertEquals("jdbc:postgresql://ep-demo.neon.tech/neondb?sslmode=require", parsed.jdbcUrl());
+        assertEquals("retail", parsed.username());
+        assertEquals("secret", parsed.password());
+    }
+
+    @Test
     void jdbcUrl_faraUser_ramaneNeschimbat() {
         String existing = "jdbc:postgresql://localhost:5432/retail";
         DatabaseUrls.Parsed parsed = DatabaseUrls.parse(existing);
