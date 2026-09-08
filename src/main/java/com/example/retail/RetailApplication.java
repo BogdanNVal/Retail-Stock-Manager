@@ -24,10 +24,16 @@ public class RetailApplication extends SpringBootServletInitializer {
     }
 
     /**
-     * On Render/Cloud Run, open {@code PORT} before Spring finishes booting so
-     * the host's "service is live" banner is not a connection refused page.
+     * On Render/Cloud Run without the Docker entrypoint proxy, open {@code PORT}
+     * before Spring finishes booting so browsers are not connection-refused.
+     * Prefer {@code RETAIL_ENTRYPOINT_PROXY=1} (Docker entrypoint binds first)
+     * so Render never mid-boot restarts with "New primary port detected".
      */
     static void bindPublicPortBeforeSpring() {
+        if ("1".equals(System.getenv("RETAIL_ENTRYPOINT_PROXY"))) {
+            // SERVER_PORT / SERVER_ADDRESS already set by docker/entrypoint.sh
+            return;
+        }
         HostedPortBinding.Ports ports = HostedPortBinding.fromEnvironment();
         if (!ports.proxy()) {
             return;

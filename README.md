@@ -14,14 +14,14 @@ Hosted from branch `cursor/retail-live-demo-f498` (not `main`).
 
 **URL:** https://retail-stock-manager.onrender.com
 
-Render prints **Your service is live** as soon as Java starts — that is **not** when the shop is ready (Tomcat often binds 30–90 seconds later). The app now opens the public port immediately and shows **Retail Stock Manager is starting** with a 5-second auto-refresh until Spring Boot finishes. Wait until the homepage appears, or look in the logs for:
+Render prints **Your service is live** as soon as the container starts — that is **not** when the shop is ready. The Docker entrypoint opens `$PORT` immediately (before the JVM) and shows **Retail Stock Manager is starting** until Spring Boot finishes. Wait until the homepage appears, or look in the logs for:
 
 ```text
-Early HTTP bind on 0.0.0.0:10000
+Entrypoint HTTP bind on 0.0.0.0:10000
 Started RetailApplication
 ```
 
-After idle, the free service sleeps; the next request can take 30–60 seconds (starting page, then the shop).
+If logs ever say **New primary port detected… Restarting deploy**, that mid-boot restart causes 502s — redeploy this branch so the entrypoint binds `$PORT` before Java. After idle, the free service sleeps; the next request can take 30–60 seconds (starting page, then the shop).
 
 Demo login: `admin` / `admin123`.
 
@@ -253,7 +253,7 @@ Set these environment variables:
 | `DATABASE_URL` | Neon/Render-style `postgresql://user:pass@host/db?sslmode=require` (converted to JDBC on startup) |
 | `SPRING_DATASOURCE_URL` | Optional override if you prefer a ready `jdbc:postgresql://…` URL |
 | `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` | Demo login (defaults `admin` / `admin123`) |
-| `PORT` | Set by the host (Render default `10000`). An early proxy binds `0.0.0.0:$PORT` at once; Tomcat listens on loopback |
+| `PORT` | Set by the host (Render default `10000`). The Docker entrypoint binds `0.0.0.0:$PORT` before Java; Tomcat listens on loopback |
 | `JAVA_TOOL_OPTIONS` | Already in the Docker image (Serial GC, RAM cap, IPv4) |
 
 The JVM is capped so a **512 MB** instance has a chance to boot. If Render’s free web service OOMs or never becomes healthy, use Cloud Run instead (do not pay for Render Starter unless both fail).
@@ -267,7 +267,7 @@ The JVM is capped so a **512 MB** instance has a chance to boot. If Render’s f
 5. Paste `DATABASE_URL` from Neon and set `SPRING_PROFILES_ACTIVE=prod`.
 6. Optional: this repo’s [render.yaml](render.yaml) is a blueprint; `DATABASE_URL` is `sync: false` so you paste it in the dashboard.
 
-Redeploy after pulling this branch so the early port bind is in the image. Logs should show `Early HTTP bind` within a second of Java starting; the URL then serves a starting page instead of failing to load. The shop appears after `Started RetailApplication`. First request after sleep can take 30–60 seconds.
+Redeploy after pulling this branch. Logs should show `Entrypoint HTTP bind` **before** the Spring banner (so Render does not restart mid-boot). The URL serves a starting page until `Started RetailApplication`. First request after sleep can take 30–60 seconds. Do **not** set a custom Health Check Path.
 
 ### Cloud Run (if Render free cannot boot)
 
