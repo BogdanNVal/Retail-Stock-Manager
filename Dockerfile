@@ -15,4 +15,6 @@ COPY --from=build /app/target/retail-stock-manager.war app.war
 # listens on 0.0.0.0:$PORT (Render's scanner does not see IPv6-only binds).
 ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=70 -Djava.net.preferIPv4Stack=true"
 EXPOSE 8080 10000
-ENTRYPOINT ["sh", "-c", "exec java -jar app.war --server.address=0.0.0.0 --server.port=${PORT:-8080}"]
+# Do not pass --server.port=$PORT: on Render that port is bound immediately
+# by EarlyBindProxy while Tomcat starts on loopback.
+ENTRYPOINT ["sh", "-c", "exec java -jar app.war"]
