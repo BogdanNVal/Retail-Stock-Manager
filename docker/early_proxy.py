@@ -114,8 +114,36 @@ def ensure_readiness_probe(internal_port: int, state: dict):
     ).start()
 
 
-def read_limited(stream, max_bytes: int) -> bytes:
-    data = stream.read(max_bytes + 1)
+def read_exact(stream, size: int) -> bytes:
+    """Read exactly size bytes. Do not read size+1 — on keep-alive sockets
+    that blocks forever waiting for a byte that is not part of the body."""
+    if size <= 0:
+        return b""
+    chunks = []
+    remaining = size
+    while remaining > 0:
+        chunk = stream.read(remaining)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        remaining -= len(chunk)
+    return b"".join(chunks)
+
+
+def read_response_limited(resp, max_bytes: int) -> bytes:
+    length_header = resp.getheader("Content-Length") if hasattr(resp, "getheader") else None
+    if length_header is None and hasattr(resp, "headers"):
+        length_header = resp.headers.get("Content-Length")
+    if length_header is not None:
+        try:
+            declared = int(length_header)
+        except ValueError:
+            declared = -1
+        if declared >= 0:
+            if declared > max_bytes:
+                raise ValueError("body too large")
+            return read_exact(resp, declared)
+    data = resp.read(max_bytes + 1)
     if data is None:
         return b""
     if len(data) > max_bytes:
@@ -218,11 +246,7 @@ def make_handler(internal_port: int, state: dict):
             if length > MAX_REQUEST_BYTES:
                 self._send(413, b"Request too large", "text/plain; charset=UTF-8", True)
                 return True
-            try:
-                payload = read_limited(self.rfile, length) if length > 0 else b""
-            except ValueError:
-                self._send(413, b"Request too large", "text/plain; charset=UTF-8", True)
-                return True
+            payload = read_exact(self.rfile, length)
             conn = http.client.HTTPConnection("127.0.0.1", internal_port, timeout=PROXY_TIMEOUT_SEC)
             try:
                 headers = {"Connection": "close"}
@@ -237,7 +261,7 @@ def make_handler(internal_port: int, state: dict):
                     headers.setdefault("X-Forwarded-For", self.client_address[0])
                 conn.request(self.command, self.path, body=payload or None, headers=headers)
                 resp = conn.getresponse()
-                data = read_limited(resp, MAX_RESPONSE_BYTES)
+                data = read_response_limited(resp, MAX_RESPONSE_BYTES)
                 self.send_response(resp.status)
                 for key, value in resp.getheaders():
                     if key.lower() in SKIP_RESP:
