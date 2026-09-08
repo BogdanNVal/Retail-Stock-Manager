@@ -11,7 +11,8 @@ RUN mvn -B -DskipTests package
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/retail-stock-manager.war app.war
-# Fit a 512 MB Render/Cloud Run instance (Serial GC + cap heap to 70% of container RAM).
-ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=70"
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.war"]
+# Fit a 512 MB Render/Cloud Run instance. preferIPv4Stack so the process
+# listens on 0.0.0.0:$PORT (Render's scanner does not see IPv6-only binds).
+ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=70 -Djava.net.preferIPv4Stack=true"
+EXPOSE 8080 10000
+ENTRYPOINT ["sh", "-c", "exec java -jar app.war --server.address=0.0.0.0 --server.port=${PORT:-8080}"]

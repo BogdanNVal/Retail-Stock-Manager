@@ -245,8 +245,8 @@ Set these environment variables:
 | `DATABASE_URL` | Neon/Render-style `postgresql://user:pass@host/db?sslmode=require` (converted to JDBC on startup) |
 | `SPRING_DATASOURCE_URL` | Optional override if you prefer a ready `jdbc:postgresql://…` URL |
 | `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` | Demo login (defaults `admin` / `admin123`) |
-| `PORT` | Set by the host; the app binds `server.port=${PORT:8080}` |
-| `JAVA_TOOL_OPTIONS` | Already `-XX:+UseSerialGC -XX:MaxRAMPercentage=70` in the Docker image |
+| `PORT` | Set by the host; the app binds `0.0.0.0:$PORT` (Render default is 10000) |
+| `JAVA_TOOL_OPTIONS` | Already in the Docker image (Serial GC, RAM cap, IPv4) |
 
 The JVM is capped so a **512 MB** instance has a chance to boot. If Render’s free web service OOMs or never becomes healthy, use Cloud Run instead (do not pay for Render Starter unless both fail).
 
@@ -255,11 +255,11 @@ The JVM is capped so a **512 MB** instance has a chance to boot. If Render’s f
 1. Create a Neon Postgres database (free plan does not expire the way Render’s free Postgres does).
 2. In Render: **New → Web Service** from this GitHub repo.
 3. Select branch **`cursor/retail-live-demo-f498`**, not `main`.
-4. Runtime: Docker. Health check path: `/`.
+4. Runtime: Docker. Leave **Health Check Path empty** (do not use `/healthz`; `/` also works but is slower because the homepage is ready only after full Spring startup).
 5. Paste `DATABASE_URL` from Neon and set `SPRING_PROFILES_ACTIVE=prod`.
 6. Optional: this repo’s [render.yaml](render.yaml) is a blueprint; `DATABASE_URL` is `sync: false` so you paste it in the dashboard.
 
-The service will sleep when idle. First request after sleep can take 30–60 seconds.
+If logs say `No open HTTP ports detected on 0.0.0.0`, wait until you see `Started RetailApplication`. The image binds `0.0.0.0` and IPv4 so Render’s scanner can see the port. Then open the `.onrender.com` URL (first request after sleep can take 30–60 seconds).
 
 ### Cloud Run (if Render free cannot boot)
 
