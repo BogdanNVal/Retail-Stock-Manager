@@ -264,10 +264,18 @@ The JVM is capped so a **512 MB** instance has a chance to boot. If Render’s f
 2. In Render: **New → Web Service** from this GitHub repo.
 3. Select branch **`cursor/retail-live-demo-f498`**, not `main`.
 4. Runtime: Docker. Leave **Health Check Path empty** (do not use `/healthz`; `/` also works but is slower because the homepage is ready only after full Spring startup).
-5. Paste `DATABASE_URL` from Neon and set `SPRING_PROFILES_ACTIVE=prod`.
+5. Paste `DATABASE_URL` from Neon and set `SPRING_PROFILES_ACTIVE=prod`. The name must be exactly `DATABASE_URL` (not `DATABASE_UR`). Include `?sslmode=require`.
 6. Optional: this repo’s [render.yaml](render.yaml) is a blueprint; `DATABASE_URL` is `sync: false` so you paste it in the dashboard.
 
-Redeploy after pulling this branch. Logs should show `Entrypoint HTTP bind` **before** the Spring banner (so Render does not restart mid-boot). The URL serves a starting page until `Started RetailApplication`. First request after sleep can take 30–60 seconds. Do **not** set a custom Health Check Path.
+Redeploy after pulling this branch. Logs should show `Entrypoint HTTP bind` **before** the Spring banner. The starting page should appear in 1–2 seconds (not a long blank spinner). Then look for:
+
+```text
+prod datasource configured at host …
+Started RetailApplication
+[early-proxy] backend ready
+```
+
+If you see `prod profile requires DATABASE_URL`, fix the env var. If boot stops at Hibernate with no `Started RetailApplication`, copy the later ERROR lines. First request after idle sleep can take 30–60 seconds while Render wakes the instance. Do **not** set a custom Health Check Path.
 
 ### Cloud Run (if Render free cannot boot)
 
