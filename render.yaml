@@ -13,7 +13,7 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: JAVA_TOOL_OPTIONS
-        value: "-XX:+UseSerialGC -XX:MaxRAMPercentage=70"
+        value: "-XX:+UseSerialGC -XX:MaxRAMPercentage=65 -XX:MaxMetaspaceSize=128m -Xss512k -Djava.net.preferIPv4Stack=true"
       - key: APP_ADMIN_USERNAME
         value: admin
       - key: APP_ADMIN_PASSWORD
