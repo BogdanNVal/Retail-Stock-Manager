@@ -21,7 +21,7 @@ Entrypoint HTTP bind on 0.0.0.0:10000
 Started RetailApplication
 ```
 
-If logs ever say **New primary port detected… Restarting deploy**, that mid-boot restart causes 502s — redeploy this branch so the entrypoint binds `$PORT` before Java. After idle, the free service sleeps; the next request can take 30–60 seconds (starting page, then the shop).
+If logs ever say **New primary port detected… Restarting deploy**, that mid-boot restart causes 502s — redeploy this branch so the entrypoint binds `$PORT` before Java. If the browser spins with no page while logs show `[early-proxy] GET / 200`, redeploy the fix that fails fast when Tomcat accepts TCP before Spring can answer. After idle, the free service sleeps; the next request can take 30–60 seconds (starting page, then the shop).
 
 Demo login: `admin` / `admin123`.
 

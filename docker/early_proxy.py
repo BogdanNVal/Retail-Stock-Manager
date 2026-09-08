@@ -3,15 +3,29 @@
 
 Render restarts the deploy when it discovers the HTTP port mid-boot
 (\"New primary port detected\"). Binding here in the entrypoint means the
-port is open from process start. Until Tomcat is up, serve a starting page;
-afterward reverse-proxy to 127.0.0.1:internal.
+port is open from process start. Until Tomcat answers HTTP quickly, serve a
+starting page; afterward reverse-proxy to 127.0.0.1:internal.
+
+Important: Tomcat can accept TCP before Spring is ready. A long proxy
+timeout leaves Render/Cloudflare with 0 bytes until they give up — the
+browser looks like the page \"does not load\" even though this process
+eventually logs HTTP 200. Keep backend timeouts short and always
+Connection: close.
 """
 
 from __future__ import annotations
 
 import http.client
+import socket
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+# Connect must fail fast when nothing listens. Request must fail fast when
+# Tomcat accepted TCP but Spring cannot answer yet (boot window).
+CONNECT_TIMEOUT_SEC = 0.25
+REQUEST_TIMEOUT_SEC = 2.0
+# After the first successful proxied response, allow slower first JSP compile.
+WARM_REQUEST_TIMEOUT_SEC = 30.0
 
 SKIP_REQ = {
     "connection",
@@ -57,20 +71,20 @@ STARTING_HTML = """<!DOCTYPE html>
 
 
 def make_handler(internal_port: int):
-    class Handler(BaseHTTPRequestHandler):
-        protocol_version = "HTTP/1.1"
+    state = {"warm": False}
 
-        def log_message(self, fmt, *args):  # quieter on free-tier logs
+    class Handler(BaseHTTPRequestHandler):
+        # HTTP/1.0 + Connection: close avoids keep-alive stalls behind Render.
+        protocol_version = "HTTP/1.0"
+        close_connection = True
+
+        def log_message(self, fmt, *args):
             sys.stderr.write("[early-proxy] " + (fmt % args) + "\n")
+            sys.stderr.flush()
 
         def do_HEAD(self):
-            # Render's port probe uses HEAD /. Answer 200 even before Tomcat.
             if self._proxy_or_none(include_body=False) is None:
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=UTF-8")
-                self.send_header("Content-Length", "0")
-                self.send_header("Cache-Control", "no-store")
-                self.end_headers()
+                self._send(200, b"", "text/html; charset=UTF-8", include_body=False)
 
         def do_GET(self):
             self._handle(True)
@@ -96,31 +110,47 @@ def make_handler(internal_port: int):
 
         def _starting(self, include_body: bool):
             if self.path.startswith("/favicon.ico"):
-                self.send_response(204)
-                self.end_headers()
+                self._send(204, b"", "text/plain", include_body=False)
                 return
-            body = STARTING_HTML.encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=UTF-8")
+            self._send(200, STARTING_HTML.encode("utf-8"), "text/html; charset=UTF-8", include_body)
+
+        def _send(self, status: int, body: bytes, content_type: str, include_body: bool):
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
+            self.send_header("Connection", "close")
             self.end_headers()
-            if include_body:
+            if include_body and body:
                 self.wfile.write(body)
+            try:
+                self.wfile.flush()
+            except OSError:
+                pass
+
+        def _backend_accepts(self) -> bool:
+            try:
+                with socket.create_connection(("127.0.0.1", internal_port), CONNECT_TIMEOUT_SEC):
+                    return True
+            except OSError:
+                return False
 
         def _proxy_or_none(self, include_body: bool):
+            if not self._backend_accepts():
+                return None
             length = int(self.headers.get("Content-Length") or 0)
             payload = self.rfile.read(length) if length > 0 else b""
-            conn = http.client.HTTPConnection("127.0.0.1", internal_port, timeout=120)
+            timeout = WARM_REQUEST_TIMEOUT_SEC if state["warm"] else REQUEST_TIMEOUT_SEC
+            conn = http.client.HTTPConnection("127.0.0.1", internal_port, timeout=timeout)
             try:
-                headers = {}
+                headers = {"Connection": "close"}
                 for key, value in self.headers.items():
                     if key.lower() in SKIP_REQ:
                         continue
                     headers[key] = value
                 if "X-Forwarded-Host" not in headers and self.headers.get("Host"):
                     headers["X-Forwarded-Host"] = self.headers["Host"]
-                headers.setdefault("X-Forwarded-Proto", "http")
+                headers.setdefault("X-Forwarded-Proto", "https")
                 if self.client_address:
                     headers.setdefault("X-Forwarded-For", self.client_address[0])
                 conn.request(self.command, self.path, body=payload or None, headers=headers)
@@ -132,14 +162,25 @@ def make_handler(internal_port: int):
                         continue
                     self.send_header(key, value)
                 self.send_header("Content-Length", str(len(data)))
+                self.send_header("Connection", "close")
                 self.end_headers()
                 if include_body and data:
                     self.wfile.write(data)
+                try:
+                    self.wfile.flush()
+                except OSError:
+                    pass
+                state["warm"] = True
                 return True
-            except OSError:
+            except Exception as ex:
+                sys.stderr.write(f"[early-proxy] backend not ready: {ex!r}\n")
+                sys.stderr.flush()
                 return None
             finally:
-                conn.close()
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     return Handler
 
