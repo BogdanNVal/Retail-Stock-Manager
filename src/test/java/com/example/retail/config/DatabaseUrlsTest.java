@@ -36,6 +36,24 @@ class DatabaseUrlsTest {
     }
 
     @Test
+    void parolaCuAt_seExtrageCorect() {
+        DatabaseUrls.Parsed parsed = DatabaseUrls.parse(
+                "postgresql://retail:p@ss@ep-demo.neon.tech/neondb?sslmode=require");
+        assertEquals("jdbc:postgresql://ep-demo.neon.tech/neondb?sslmode=require", parsed.jdbcUrl());
+        assertEquals("retail", parsed.username());
+        assertEquals("p@ss", parsed.password());
+    }
+
+    @Test
+    void parolaUrlEncoded_seDecodeaza() {
+        DatabaseUrls.Parsed parsed = DatabaseUrls.parse(
+                "postgresql://retail:p%40ss@ep-demo.neon.tech/neondb?sslmode=require");
+        assertEquals("jdbc:postgresql://ep-demo.neon.tech/neondb?sslmode=require", parsed.jdbcUrl());
+        assertEquals("retail", parsed.username());
+        assertEquals("p@ss", parsed.password());
+    }
+
+    @Test
     void jdbcUrl_faraUser_ramaneNeschimbat() {
         String existing = "jdbc:postgresql://localhost:5432/retail";
         DatabaseUrls.Parsed parsed = DatabaseUrls.parse(existing);

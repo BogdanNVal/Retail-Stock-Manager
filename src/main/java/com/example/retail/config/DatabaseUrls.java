@@ -1,12 +1,15 @@
 package com.example.retail.config;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Converts hosted DATABASE_URL values (Neon, Render, Heroku) into a JDBC URL
  * and optional username/password. The PostgreSQL driver does not treat
  * {@code jdbc:postgresql://user:pass@host/db} as credentials in the host part.
+ * <p>
+ * Passwords may contain {@code @} (encoded or raw). Parsing uses the last
+ * {@code @} before the path so {@code user:p@ss@host/db} still works.
  */
 public final class DatabaseUrls {
 
@@ -30,53 +33,80 @@ public final class DatabaseUrls {
             return new Parsed("", null, null);
         }
         if (url.startsWith("jdbc:postgresql://")) {
-            return parseUri("postgresql://" + url.substring("jdbc:postgresql://".length()), url);
+            return parsePostgresFamily(url.substring("jdbc:".length()), true);
         }
         if (url.startsWith("postgres://")) {
-            return parseUri("postgresql://" + url.substring("postgres://".length()), null);
+            return parsePostgresFamily("postgresql://" + url.substring("postgres://".length()), false);
         }
         if (url.startsWith("postgresql://")) {
-            return parseUri(url, null);
+            return parsePostgresFamily(url, false);
         }
         return new Parsed(url, null, null);
     }
 
-    private static Parsed parseUri(String postgresqlUri, String jdbcIfUnchanged) {
+    private static Parsed parsePostgresFamily(String postgresqlUri, boolean alreadyJdbcShape) {
+        final String prefix = "postgresql://";
+        if (!postgresqlUri.startsWith(prefix)) {
+            return new Parsed(alreadyJdbcShape ? "jdbc:" + postgresqlUri : toJdbcPrefix(postgresqlUri), null, null);
+        }
+        String rest = postgresqlUri.substring(prefix.length());
+        int pathStart = indexOfPathOrQuery(rest);
+        String authority = pathStart >= 0 ? rest.substring(0, pathStart) : rest;
+        String pathAndQuery = pathStart >= 0 ? rest.substring(pathStart) : "";
+
+        String username = null;
+        String password = null;
+        String hostPort = authority;
+        int at = authority.lastIndexOf('@');
+        if (at >= 0) {
+            String userInfo = authority.substring(0, at);
+            hostPort = authority.substring(at + 1);
+            int colon = userInfo.indexOf(':');
+            if (colon >= 0) {
+                username = decode(userInfo.substring(0, colon));
+                password = decode(userInfo.substring(colon + 1));
+            } else if (!userInfo.isBlank()) {
+                username = decode(userInfo);
+            }
+        }
+        if (hostPort.isBlank()) {
+            return new Parsed(alreadyJdbcShape ? "jdbc:" + postgresqlUri : toJdbcPrefix(postgresqlUri), username, password);
+        }
+
+        String path = pathAndQuery;
+        String query = null;
+        int q = pathAndQuery.indexOf('?');
+        if (q >= 0) {
+            path = pathAndQuery.substring(0, q);
+            query = sanitizeQuery(pathAndQuery.substring(q + 1));
+        }
+
+        StringBuilder jdbc = new StringBuilder("jdbc:postgresql://");
+        jdbc.append(hostPort);
+        jdbc.append(path.isEmpty() ? "" : path);
+        if (query != null && !query.isEmpty()) {
+            jdbc.append('?').append(query);
+        }
+        return new Parsed(jdbc.toString(), username, password);
+    }
+
+    private static int indexOfPathOrQuery(String rest) {
+        int slash = rest.indexOf('/');
+        int q = rest.indexOf('?');
+        if (slash < 0) {
+            return q;
+        }
+        if (q < 0) {
+            return slash;
+        }
+        return Math.min(slash, q);
+    }
+
+    private static String decode(String value) {
         try {
-            URI uri = new URI(postgresqlUri);
-            String userInfo = uri.getUserInfo();
-            String username = null;
-            String password = null;
-            if (userInfo != null && !userInfo.isBlank()) {
-                int colon = userInfo.indexOf(':');
-                if (colon >= 0) {
-                    username = userInfo.substring(0, colon);
-                    password = userInfo.substring(colon + 1);
-                } else {
-                    username = userInfo;
-                }
-            }
-            if (uri.getHost() == null) {
-                return new Parsed(jdbcIfUnchanged != null ? jdbcIfUnchanged : toJdbcPrefix(postgresqlUri), username, password);
-            }
-            StringBuilder jdbc = new StringBuilder("jdbc:postgresql://");
-            jdbc.append(uri.getHost());
-            if (uri.getPort() > 0) {
-                jdbc.append(':').append(uri.getPort());
-            }
-            if (uri.getRawPath() != null) {
-                jdbc.append(uri.getRawPath());
-            }
-            if (uri.getRawQuery() != null) {
-                String query = sanitizeQuery(uri.getRawQuery());
-                if (!query.isEmpty()) {
-                    jdbc.append('?').append(query);
-                }
-            }
-            return new Parsed(jdbc.toString(), username, password);
-        } catch (URISyntaxException ex) {
-            String fallback = jdbcIfUnchanged != null ? jdbcIfUnchanged : toJdbcPrefix(postgresqlUri);
-            return new Parsed(fallback, null, null);
+            return URLDecoder.decode(value, StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            return value;
         }
     }
 

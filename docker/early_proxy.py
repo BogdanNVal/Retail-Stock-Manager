@@ -19,6 +19,9 @@ CONNECT_TIMEOUT_SEC = 0.25
 READY_TIMEOUT_SEC = 1.0
 PROXY_TIMEOUT_SEC = 60.0
 READY_POLL_SEC = 1.0
+MAX_CONCURRENT = 16
+MAX_REQUEST_BYTES = 2 * 1024 * 1024
+MAX_RESPONSE_BYTES = 5 * 1024 * 1024
 
 SKIP_REQ = {
     "connection",
@@ -41,7 +44,7 @@ STARTING_HTML = """<!DOCTYPE html>
   <meta charset="UTF-8"/>
   <meta http-equiv="refresh" content="5"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Starting — Retail Stock Manager</title>
+  <title>Starting - Retail Stock Manager</title>
   <style>
     body { margin:0; font-family:"Segoe UI","Helvetica Neue",sans-serif;
       color:#1f2a24; background:linear-gradient(180deg,#ebe6db,#e7efe9); min-height:100vh; }
@@ -54,9 +57,9 @@ STARTING_HTML = """<!DOCTYPE html>
 <body>
   <main>
     <h1>Retail Stock Manager is starting</h1>
-    <p>The host already printed &ldquo;Your service is live&rdquo;, but Spring Boot
+    <p>The host already printed "Your service is live", but Spring Boot
     is still booting on the free plan. This page refreshes every 5 seconds.
-    First boot can take 1–2 minutes; after idle sleep, 30–60 seconds.</p>
+    First boot can take 1-2 minutes; after idle sleep, 30-60 seconds.</p>
   </main>
 </body>
 </html>
@@ -73,7 +76,7 @@ def probe_ready(internal_port: int) -> bool:
     try:
         conn.request("GET", "/internal/ready", headers={"Connection": "close"})
         resp = conn.getresponse()
-        body = resp.read()
+        body = resp.read(64)
         return resp.status == 200 and body.strip() == b"ok"
     except Exception:
         return False
@@ -85,16 +88,44 @@ def probe_ready(internal_port: int) -> bool:
 
 
 def readiness_loop(internal_port: int, state: dict):
-    while not state["warm"]:
-        if probe_ready(internal_port):
-            state["warm"] = True
-            sys.stderr.write("[early-proxy] backend ready — forwarding traffic to Tomcat\n")
-            sys.stderr.flush()
+    try:
+        while not state["warm"]:
+            if probe_ready(internal_port):
+                state["warm"] = True
+                sys.stderr.write("[early-proxy] backend ready - forwarding traffic to Tomcat\n")
+                sys.stderr.flush()
+                return
+            time.sleep(READY_POLL_SEC)
+    finally:
+        with state["lock"]:
+            state["probing"] = False
+
+
+def ensure_readiness_probe(internal_port: int, state: dict):
+    with state["lock"]:
+        if state["warm"] or state["probing"]:
             return
-        time.sleep(READY_POLL_SEC)
+        state["probing"] = True
+    threading.Thread(
+        target=readiness_loop,
+        args=(internal_port, state),
+        name="ready-probe",
+        daemon=True,
+    ).start()
+
+
+def read_limited(stream, max_bytes: int) -> bytes:
+    data = stream.read(max_bytes + 1)
+    if data is None:
+        return b""
+    if len(data) > max_bytes:
+        raise ValueError("body too large")
+    return data
 
 
 def make_handler(internal_port: int, state: dict):
+    gate = threading.Semaphore(MAX_CONCURRENT)
+
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.0"
         close_connection = True
@@ -102,6 +133,23 @@ def make_handler(internal_port: int, state: dict):
         def log_message(self, fmt, *args):
             sys.stderr.write("[early-proxy] " + (fmt % args) + "\n")
             sys.stderr.flush()
+
+        def handle(self):
+            if not gate.acquire(blocking=False):
+                try:
+                    self._send(
+                        503,
+                        b"<!DOCTYPE html><html><body><h1>Busy</h1><p>Try again.</p></body></html>",
+                        "text/html; charset=UTF-8",
+                        True,
+                    )
+                except Exception:
+                    pass
+                return
+            try:
+                super().handle()
+            finally:
+                gate.release()
 
         def do_HEAD(self):
             if not state["warm"]:
@@ -129,7 +177,6 @@ def make_handler(internal_port: int, state: dict):
             self._handle(True)
 
         def _handle(self, include_body: bool):
-            # Never block the browser on Tomcat until ApplicationReadyEvent.
             if not state["warm"]:
                 self._starting(include_body)
                 return
@@ -164,8 +211,18 @@ def make_handler(internal_port: int, state: dict):
                 pass
 
         def _proxy_or_none(self, include_body: bool):
-            length = int(self.headers.get("Content-Length") or 0)
-            payload = self.rfile.read(length) if length > 0 else b""
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length > MAX_REQUEST_BYTES:
+                self._send(413, b"Request too large", "text/plain; charset=UTF-8", True)
+                return True
+            try:
+                payload = read_limited(self.rfile, length) if length > 0 else b""
+            except ValueError:
+                self._send(413, b"Request too large", "text/plain; charset=UTF-8", True)
+                return True
             conn = http.client.HTTPConnection("127.0.0.1", internal_port, timeout=PROXY_TIMEOUT_SEC)
             try:
                 headers = {"Connection": "close"}
@@ -180,7 +237,7 @@ def make_handler(internal_port: int, state: dict):
                     headers.setdefault("X-Forwarded-For", self.client_address[0])
                 conn.request(self.command, self.path, body=payload or None, headers=headers)
                 resp = conn.getresponse()
-                data = resp.read()
+                data = read_limited(resp, MAX_RESPONSE_BYTES)
                 self.send_response(resp.status)
                 for key, value in resp.getheaders():
                     if key.lower() in SKIP_RESP:
@@ -199,20 +256,18 @@ def make_handler(internal_port: int, state: dict):
             except TimeoutError as ex:
                 sys.stderr.write(f"[early-proxy] proxy timeout: {ex!r}\n")
                 sys.stderr.flush()
-                # Keep warm=True: a slow page must not send browsers back to the
-                # starting screen while the API and other routes still work.
                 return None
             except OSError as ex:
                 sys.stderr.write(f"[early-proxy] proxy error: {ex!r}\n")
                 sys.stderr.flush()
                 state["warm"] = False
-                threading.Thread(
-                    target=readiness_loop,
-                    args=(internal_port, state),
-                    name="ready-reprobe",
-                    daemon=True,
-                ).start()
+                ensure_readiness_probe(internal_port, state)
                 return None
+            except ValueError as ex:
+                sys.stderr.write(f"[early-proxy] proxy error: {ex!r}\n")
+                sys.stderr.flush()
+                self._send(502, b"Upstream response too large", "text/plain; charset=UTF-8", True)
+                return True
             except Exception as ex:
                 sys.stderr.write(f"[early-proxy] proxy error: {ex!r}\n")
                 sys.stderr.flush()
@@ -232,13 +287,8 @@ def main():
         sys.exit(2)
     public_port = int(sys.argv[1])
     internal_port = int(sys.argv[2])
-    state = {"warm": False}
-    threading.Thread(
-        target=readiness_loop,
-        args=(internal_port, state),
-        name="ready-probe",
-        daemon=True,
-    ).start()
+    state = {"warm": False, "probing": False, "lock": threading.Lock()}
+    ensure_readiness_probe(internal_port, state)
     server = ThreadingHTTPServer(("0.0.0.0", public_port), make_handler(internal_port, state))
     print(
         f"Entrypoint HTTP bind on 0.0.0.0:{public_port} "

@@ -19,7 +19,7 @@ COPY docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 # Fit a 512 MB Render/Cloud Run instance. preferIPv4Stack so the process
 # listens on 0.0.0.0:$PORT (Render's scanner does not see IPv6-only binds).
-ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=70 -Djava.net.preferIPv4Stack=true"
+ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=65 -XX:MaxMetaspaceSize=128m -Xss512k -Djava.net.preferIPv4Stack=true"
 EXPOSE 8080 10000
 # Bind $PORT in the entrypoint *before* the JVM so Render does not restart
 # mid-boot with "New primary port detected".
