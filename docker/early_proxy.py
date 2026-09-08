@@ -134,7 +134,14 @@ def make_handler(internal_port: int, state: dict):
                 self._starting(include_body)
                 return
             if self._proxy_or_none(include_body=include_body) is None:
-                self._starting(include_body)
+                if state["warm"]:
+                    body = (
+                        b"<!DOCTYPE html><html><body><h1>Temporary timeout</h1>"
+                        b"<p>The shop is up — refresh this page.</p></body></html>"
+                    )
+                    self._send(504, body, "text/html; charset=UTF-8", include_body)
+                else:
+                    self._starting(include_body)
 
         def _starting(self, include_body: bool):
             if self.path.startswith("/favicon.ico"):
@@ -189,7 +196,13 @@ def make_handler(internal_port: int, state: dict):
                 except OSError:
                     pass
                 return True
-            except Exception as ex:
+            except TimeoutError as ex:
+                sys.stderr.write(f"[early-proxy] proxy timeout: {ex!r}\n")
+                sys.stderr.flush()
+                # Keep warm=True: a slow page must not send browsers back to the
+                # starting screen while the API and other routes still work.
+                return None
+            except OSError as ex:
                 sys.stderr.write(f"[early-proxy] proxy error: {ex!r}\n")
                 sys.stderr.flush()
                 state["warm"] = False
@@ -199,6 +212,10 @@ def make_handler(internal_port: int, state: dict):
                     name="ready-reprobe",
                     daemon=True,
                 ).start()
+                return None
+            except Exception as ex:
+                sys.stderr.write(f"[early-proxy] proxy error: {ex!r}\n")
+                sys.stderr.flush()
                 return None
             finally:
                 try:

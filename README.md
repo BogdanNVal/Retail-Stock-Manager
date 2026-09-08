@@ -42,7 +42,7 @@ Demo login: `admin` / `admin123`.
 ## Technologies
 
 - **Java 21 LTS + Spring Boot 3** (Spring MVC, Spring Data JPA, Spring Security)
-- **JSP + JSTL** — classic JEE views alongside Spring
+- **Thymeleaf** — server-side HTML views (replaces JSP/Jasper for reliable free-tier hosting)
 - **MySQL** (Docker profile), **PostgreSQL** (hosted `prod` profile), or **H2** in-memory (default `dev` profile)
 - **Docker + Docker Compose** — app, MySQL, and phpMyAdmin
 - **iText7** — PDF receipts
@@ -239,7 +239,7 @@ mvn clean package
 # copy target/retail-stock-manager.war into Tomcat webapps/
 ```
 
-The executable WAR also includes Jasper so `java -jar target/retail-stock-manager.war` can render JSPs.
+Views are Thymeleaf templates inside the WAR (`classpath:/templates`).
 
 ## Hosting (Render or Cloud Run)
 
@@ -298,6 +298,6 @@ An always-on alternative (not the first attempt): Oracle Cloud Always Free ARM V
 
 ## Why this project
 
-Built as a study project for a Java/JEE stack typical of enterprise/retail environments:
-Spring, JSP, JPA/SQL, design patterns, and deployment — starting from the same business logic
+Built as a study project for a Java stack typical of enterprise/retail environments:
+Spring, Thymeleaf, JPA/SQL, design patterns, and deployment — starting from the same business logic
 (stock, EAN, billing) previously implemented in C#/WinForms.

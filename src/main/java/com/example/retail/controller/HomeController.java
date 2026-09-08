@@ -26,6 +26,6 @@ public class HomeController {
         }
         model.addAttribute("dbKind", dbKind);
         model.addAttribute("h2Activ", "h2".equals(dbKind));
-        return "home"; // -> WEB-INF/jsp/home.jsp
+        return "home";
     }
 }

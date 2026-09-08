@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * Maps common service/validation failures to consistent responses for REST controllers only
- * (does not intercept JSP {@code @Controller} flows).
+ * (does not intercept HTML {@code @Controller} flows).
  */
 @RestControllerAdvice(annotations = RestController.class)
 public class GlobalExceptionHandler {
