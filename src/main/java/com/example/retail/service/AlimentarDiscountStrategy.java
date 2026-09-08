@@ -4,10 +4,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * Produsele alimentare primesc 5% discount la o cantitate >= 5 bucati
- * (regula simpla, demonstrativa).
- */
 @Component("alimentarDiscount")
 public class AlimentarDiscountStrategy implements DiscountStrategy {
 

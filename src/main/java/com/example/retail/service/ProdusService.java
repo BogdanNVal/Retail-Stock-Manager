@@ -147,7 +147,6 @@ public class ProdusService {
             totalCuDiscount = totalCuDiscount.add(linie.getTotalCuDiscount());
         }
 
-        // Rotunjire la 2 zecimale pentru sumele finale ale bonului
         totalFaraDiscount = totalFaraDiscount.setScale(2, RoundingMode.HALF_UP);
         totalCuDiscount = totalCuDiscount.setScale(2, RoundingMode.HALF_UP);
         bon.setTotalFaraDiscount(totalFaraDiscount);

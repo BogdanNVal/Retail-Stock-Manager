@@ -14,7 +14,7 @@
     <groupId>com.example</groupId>
     <artifactId>retail-stock-manager</artifactId>
     <version>1.0.0</version>
-    <!-- war ca sa poata fi deployat si pe un Tomcat extern, nu doar embedded -->
+    <!-- WAR so the app can run on external Tomcat, not only the embedded server. -->
     <packaging>war</packaging>
 
     <properties>
@@ -22,19 +22,16 @@
     </properties>
 
     <dependencies>
-        <!-- Web MVC -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- JPA / Hibernate -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- Securitate (login admin) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -44,13 +41,12 @@
             <artifactId>spring-security-taglibs</artifactId>
         </dependency>
 
-        <!-- Validare formulare/DTO-uri (Bean Validation / Hibernate Validator) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- Thymeleaf views (replaces runtime JSP/Jasper — too heavy for 512 MB free hosts) -->
+        <!-- Thymeleaf instead of JSP/Jasper — Jasper was too heavy for 512 MB hosts. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
@@ -81,7 +77,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Generare PDF pentru bon/raport -->
         <dependency>
             <groupId>com.itextpdf</groupId>
             <artifactId>itext7-core</artifactId>
@@ -95,7 +90,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Suport pentru @WithMockUser si csrf() in testele MockMvc -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>

@@ -10,12 +10,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 
 import java.io.IOException;
 
-/**
- * Clasa de start a aplicatiei.
- * Extinde SpringBootServletInitializer astfel incat aplicatia sa poata fi
- * exportata ca fisier .war si rulata pe un server extern (Tomcat, WebSphere, WebLogic),
- * nu doar cu serverul Tomcat embedded din Spring Boot.
- */
+/** Boots the app as a JAR, or as a WAR on external Tomcat. */
 @SpringBootApplication
 public class RetailApplication extends SpringBootServletInitializer {
 

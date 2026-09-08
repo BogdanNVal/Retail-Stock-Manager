@@ -7,10 +7,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
-/**
- * DTO folosit de REST API la crearea/actualizarea unui produs.
- * Separat de entitatea JPA, ca sa nu expuna direct structura din baza de date.
- */
 public class ProdusRequest {
 
     @NotBlank(message = "Numele este obligatoriu")

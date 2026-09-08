@@ -33,8 +33,6 @@ public class Produs {
     @Min(value = 0, message = "Cantitatea in stoc nu poate fi negativa")
     private int cantitateStoc;
 
-    // Cod EAN-8 sau EAN-13, generat si validat cu EanValidator (validarea de
-    // checksum se face separat in serviciu, aici verificam doar ca nu e gol)
     @NotBlank(message = "Codul EAN este obligatoriu")
     @Column(unique = true)
     private String codEan;

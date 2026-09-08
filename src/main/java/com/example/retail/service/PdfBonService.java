@@ -15,9 +15,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 
-/**
- * Genereaza un bon de vanzare in format PDF, folosind libraria iText.
- */
 @Service
 public class PdfBonService {
 

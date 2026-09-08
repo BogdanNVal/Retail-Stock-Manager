@@ -28,10 +28,7 @@ public class ReadyState {
         log.info("Application ready — public proxy can forward traffic to Tomcat");
     }
 
-    /**
-     * Runs very early via {@link ProdDatabaseGuard} registered in spring.factories
-     * is cleaner; keep a bean-side check too once the context exists.
-     */
+    /** Fails fast in {@code prod} if Postgres was never configured. */
     public static void assertProdDatabaseConfigured(Environment env) {
         if (!env.matchesProfiles("prod")) {
             return;
