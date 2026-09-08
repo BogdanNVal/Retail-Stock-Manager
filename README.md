@@ -10,20 +10,15 @@ extended with sales, discounts, VAT (TVA), and authentication.
 
 ## Live demo
 
+**[https://retail-stock-manager.onrender.com](https://retail-stock-manager.onrender.com)**
+
+[![Live demo](https://img.shields.io/badge/demo-online-brightgreen)](https://retail-stock-manager.onrender.com)
+
 Hosted from branch `cursor/retail-live-demo-f498` (not `main`).
 
-**URL:** https://retail-stock-manager.onrender.com
-
-Render prints **Your service is live** as soon as the container starts — that is **not** when the shop is ready. The Docker entrypoint opens `$PORT` immediately (before the JVM) and shows **Retail Stock Manager is starting** until Spring Boot finishes. Wait until the homepage appears, or look in the logs for:
-
-```text
-Entrypoint HTTP bind on 0.0.0.0:10000
-Started RetailApplication
-```
-
-If logs ever say **New primary port detected… Restarting deploy**, that mid-boot restart causes 502s — redeploy this branch so the entrypoint binds `$PORT` before Java. If the browser spins with no page while logs show `[early-proxy] GET / 200`, redeploy the fix that fails fast when Tomcat accepts TCP before Spring can answer. After idle, the free service sleeps; the next request can take 30–60 seconds (starting page, then the shop).
-
 Demo login: `admin` / `admin123`.
+
+On Render’s free plan the service sleeps when idle — the first request after that can take 30–60 seconds (you may briefly see a starting page, then the shop).
 
 ## Screenshots
 
