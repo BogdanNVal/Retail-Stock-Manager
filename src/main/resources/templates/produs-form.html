@@ -1,10 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="UTF-8"/>
-    <title th:text="${titluFormular}">Formular produs</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}"/>
-</head>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head th:replace="~{fragments/head :: head(title=${titluFormular})}"></head>
 <body>
 <header th:replace="~{fragments/header :: siteHeader}"></header>
 <main class="page">
@@ -31,7 +27,7 @@
                     th:selected="${c == produs.categorie}"></option>
         </select>
 
-        <label for="pret">Pret</label>
+        <label for="pret">Preț</label>
         <input id="pret" type="number" step="0.01" name="pret" th:value="${produs.pret}" required/>
 
         <label for="cantitateStoc">Stoc</label>
@@ -40,9 +36,9 @@
         <label for="codEan">Cod EAN (8 sau 13 cifre)</label>
         <input id="codEan" type="text" name="codEan" th:value="${produs.codEan}" required/>
 
-        <p style="margin-top:16px">
-            <button type="submit">Salveaza</button>
-            <a class="btn btn-secondary" th:href="@{/produse}" style="margin-left:8px">Inapoi la lista</a>
+        <p class="form-actions">
+            <button type="submit">Salvează</button>
+            <a class="btn btn-secondary" th:href="@{/produse}">Înapoi la listă</a>
         </p>
     </form>
 </main>

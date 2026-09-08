@@ -4,14 +4,13 @@
 <header class="site-header" th:fragment="siteHeader">
     <a class="brand" th:href="@{/}">Retail Stock Manager</a>
     <nav class="site-nav">
-        <a th:href="@{/}">Acasa</a>
+        <a th:href="@{/}">Acasă</a>
         <a th:href="@{/produse}">Produse</a>
         <a th:href="@{/casa-de-marcat}">Casa de marcat</a>
-        <a th:href="@{/api/produse}">API</a>
         <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post">
-            <button type="submit">Logout</button>
+            <button type="submit">Deconectare</button>
         </form>
-        <a sec:authorize="!isAuthenticated()" th:href="@{/login}">Login</a>
+        <a sec:authorize="!isAuthenticated()" th:href="@{/login}">Autentificare</a>
     </nav>
 </header>
 </body>

@@ -55,13 +55,20 @@ public class SecurityConfig {
                         .requestMatchers("/api/**").authenticated()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/internal/ready").permitAll()
+                        .requestMatchers("/login").permitAll()
                         .requestMatchers("/css/**", "/js/**").permitAll()
                         .requestMatchers("/produse/**", "/casa-de-marcat/**").authenticated()
                         .anyRequest().permitAll()
                 )
                 .httpBasic(withDefaults())
-                .formLogin(withDefaults())
-                .logout(logout -> logout.logoutSuccessUrl("/").permitAll())
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .permitAll()
+                        .defaultSuccessUrl("/", true)
+                        .failureUrl("/login?error"))
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/login?logout")
+                        .permitAll())
                 .exceptionHandling(ex -> ex
                         .defaultAuthenticationEntryPointFor(
                                 (request, response, authException) ->
