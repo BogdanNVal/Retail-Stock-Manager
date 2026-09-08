@@ -136,9 +136,9 @@ def make_handler(internal_port: int, state: dict):
             if self._proxy_or_none(include_body=include_body) is None:
                 if state["warm"]:
                     body = (
-                        b"<!DOCTYPE html><html><body><h1>Temporary timeout</h1>"
-                        b"<p>The shop is up — refresh this page.</p></body></html>"
-                    )
+                        "<!DOCTYPE html><html><body><h1>Temporary timeout</h1>"
+                        "<p>The shop is up - refresh this page.</p></body></html>"
+                    ).encode("utf-8")
                     self._send(504, body, "text/html; charset=UTF-8", include_body)
                 else:
                     self._starting(include_body)
