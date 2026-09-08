@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head th:replace="~{fragments/head :: head('Casa de marcat')}"></head>
+<body>
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+<main class="page">
+    <h1>Casa de marcat</h1>
+    <p class="lede">Alege produsele și cantitățile. Discountul și TVA-ul se calculează pe bon.</p>
+
+    <div class="alert" th:if="${eroare != null}" th:text="${eroare}"></div>
+
+    <div class="receipt" th:if="${bon != null}">
+        <p class="receipt-title">Bon înregistrat — #<span th:text="${bon.id}"></span></p>
+        <div class="table-wrap">
+            <table class="data-table">
+                <tr>
+                    <th>Produs</th>
+                    <th>Cantitate</th>
+                    <th>Total fără discount</th>
+                    <th>Discount</th>
+                    <th>Total cu discount</th>
+                </tr>
+                <tr th:each="linie : ${bon.linii}">
+                    <td th:text="${linie.produs.nume}"></td>
+                    <td th:text="${linie.cantitate}"></td>
+                    <td><span th:text="${linie.totalFaraDiscount}"></span> lei</td>
+                    <td><span th:text="${linie.discountValoare}"></span> lei</td>
+                    <td><span th:text="${linie.totalCuDiscount}"></span> lei</td>
+                </tr>
+            </table>
+        </div>
+        <p class="receipt-totals">
+            Subtotal: <span th:text="${bon.totalFaraDiscount}"></span> lei<br/>
+            Discount total: <span th:text="${bon.totalDiscount}"></span> lei<br/>
+            Total cu discount: <span th:text="${bon.totalCuDiscount}"></span> lei<br/>
+            TVA (<span th:text="${bon.procentTva}"></span>%): <span th:text="${bon.totalTva}"></span> lei<br/>
+            <strong>Total de plată (cu TVA): <span th:text="${bon.totalCuTva}"></span> lei</strong>
+        </p>
+        <p><a th:href="@{/casa-de-marcat/{id}/bon-pdf(id=${bon.id})}">Descarcă bonul (PDF)</a></p>
+    </div>
+
+    <p class="empty" th:if="${#lists.isEmpty(produse)}">Nu există produse de vândut. Adaugă mai întâi un produs în catalog.</p>
+
+    <form th:unless="${#lists.isEmpty(produse)}" th:action="@{/casa-de-marcat/vinde}" method="post" id="formVanzare">
+        <div class="table-wrap">
+            <table class="data-table" id="tabelProduse">
+                <tr>
+                    <th>Produs</th>
+                    <th>Cantitate</th>
+                    <th></th>
+                </tr>
+                <tr class="rand-produs">
+                    <td>
+                        <select name="produsId" required>
+                            <option th:each="p : ${produse}"
+                                    th:value="${p.id}"
+                                    th:text="|${p.nume} (stoc: ${p.cantitateStoc})|"></option>
+                        </select>
+                    </td>
+                    <td><input type="number" name="cantitate" min="1" value="1" required/></td>
+                    <td><button class="btn-secondary" type="button" onclick="stergeRand(this)">Șterge</button></td>
+                </tr>
+            </table>
+        </div>
+
+        <p class="form-actions">
+            <button class="btn-secondary" type="button" onclick="adaugaRand()">+ Adaugă produs</button>
+            <button type="submit">Vinde (generează bon)</button>
+        </p>
+    </form>
+
+    <table class="template-row">
+        <tr class="rand-produs" id="randSablon">
+            <td>
+                <select name="produsId" required>
+                    <option th:each="p : ${produse}"
+                            th:value="${p.id}"
+                            th:text="|${p.nume} (stoc: ${p.cantitateStoc})|"></option>
+                </select>
+            </td>
+            <td><input type="number" name="cantitate" min="1" value="1" required/></td>
+            <td><button class="btn-secondary" type="button" onclick="stergeRand(this)">Șterge</button></td>
+        </tr>
+    </table>
+
+    <script>
+        function adaugaRand() {
+            var sablon = document.getElementById('randSablon');
+            var randNou = sablon.cloneNode(true);
+            randNou.removeAttribute('id');
+            document.getElementById('tabelProduse').appendChild(randNou);
+        }
+
+        function stergeRand(buton) {
+            var tabel = document.getElementById('tabelProduse');
+            var randuri = tabel.querySelectorAll('.rand-produs');
+            if (randuri.length > 1) {
+                buton.closest('tr').remove();
+            }
+        }
+    </script>
+</main>
+</body>
+</html>

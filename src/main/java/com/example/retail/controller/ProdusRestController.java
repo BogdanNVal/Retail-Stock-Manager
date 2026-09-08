@@ -12,11 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * REST API pentru gestiunea produselor (raspunde in JSON).
- * Separat de ProdusController, care serveste pagini JSP pentru interfata web.
- * Mutating endpoints require authentication (HTTP Basic or session).
- */
+/** JSON API for products. HTML pages are served by {@link ProdusController}. */
 @RestController
 @RequestMapping("/api/produse")
 public class ProdusRestController {

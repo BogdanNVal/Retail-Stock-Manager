@@ -2,7 +2,6 @@ package com.example.retail.service;
 
 import org.springframework.stereotype.Component;
 
- /// Validare si calcul cifra de control (check digit) pentru coduri EAN-8 si EAN-13.
 @Component
 public class EanValidator {
 

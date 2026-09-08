@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head th:replace="~{fragments/head :: head(title=${titluFormular})}"></head>
+<body>
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+<main class="page">
+    <h1 th:text="${titluFormular}">Formular</h1>
+
+    <div class="alert" th:if="${erori != null and !erori.isEmpty()}">
+        <ul>
+            <li th:each="eroare : ${erori}" th:text="${eroare}"></li>
+        </ul>
+    </div>
+
+    <form class="form-grid" th:action="@{/produse/salveaza}" method="post">
+        <input th:if="${produs.id != null}" type="hidden" name="id" th:value="${produs.id}"/>
+        <input th:if="${produs.id != null}" type="hidden" name="version" th:value="${produs.version}"/>
+
+        <label for="nume">Nume</label>
+        <input id="nume" type="text" name="nume" th:value="${produs.nume}" required/>
+
+        <label for="categorie">Categorie</label>
+        <select id="categorie" name="categorie">
+            <option th:each="c : ${categorii}"
+                    th:value="${c}"
+                    th:text="${c}"
+                    th:selected="${c == produs.categorie}"></option>
+        </select>
+
+        <label for="pret">Preț</label>
+        <input id="pret" type="number" step="0.01" name="pret" th:value="${produs.pret}" required/>
+
+        <label for="cantitateStoc">Stoc</label>
+        <input id="cantitateStoc" type="number" name="cantitateStoc" th:value="${produs.cantitateStoc}" required/>
+
+        <label for="codEan">Cod EAN (8 sau 13 cifre)</label>
+        <input id="codEan" type="text" name="codEan" th:value="${produs.codEan}" required/>
+
+        <p class="form-actions">
+            <button type="submit">Salvează</button>
+            <a class="btn btn-secondary" th:href="@{/produse}">Înapoi la listă</a>
+        </p>
+    </form>
+</main>
+</body>
+</html>

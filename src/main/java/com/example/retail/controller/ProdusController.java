@@ -37,7 +37,7 @@ public class ProdusController {
     public String formularProdusNou(Model model) {
         model.addAttribute("produs", new Produs());
         model.addAttribute("categorii", Categorie.values());
-        model.addAttribute("titluFormular", "Adauga produs");
+        model.addAttribute("titluFormular", "Adaugă produs");
         return "produs-form";
     }
 
@@ -50,7 +50,7 @@ public class ProdusController {
             return "redirect:/produse";
         }
         model.addAttribute("categorii", Categorie.values());
-        model.addAttribute("titluFormular", "Editeaza produs");
+        model.addAttribute("titluFormular", "Editează produs");
         return "produs-form";
     }
 
@@ -95,7 +95,7 @@ public class ProdusController {
     private String reafiseazaFormular(Produs produs, Model model, List<String> erori) {
         model.addAttribute("categorii", Categorie.values());
         model.addAttribute("erori", erori);
-        model.addAttribute("titluFormular", produs.getId() == null ? "Adauga produs" : "Editeaza produs");
+        model.addAttribute("titluFormular", produs.getId() == null ? "Adaugă produs" : "Editează produs");
         return "produs-form";
     }
 

@@ -124,7 +124,12 @@ public class ProdusService {
 
         Map<Long, Integer> cantitatiCombinate = new LinkedHashMap<>();
         for (int i = 0; i < produsIds.size(); i++) {
-            cantitatiCombinate.merge(produsIds.get(i), cantitati.get(i), Integer::sum);
+            Long produsId = produsIds.get(i);
+            Integer cantitate = cantitati.get(i);
+            if (produsId == null || cantitate == null) {
+                throw new IllegalArgumentException("Produsul si cantitatea sunt obligatorii pe fiecare linie");
+            }
+            cantitatiCombinate.merge(produsId, cantitate, Integer::sum);
         }
 
         Bon bon = new Bon();
@@ -142,7 +147,6 @@ public class ProdusService {
             totalCuDiscount = totalCuDiscount.add(linie.getTotalCuDiscount());
         }
 
-        // Rotunjire la 2 zecimale pentru sumele finale ale bonului
         totalFaraDiscount = totalFaraDiscount.setScale(2, RoundingMode.HALF_UP);
         totalCuDiscount = totalCuDiscount.setScale(2, RoundingMode.HALF_UP);
         bon.setTotalFaraDiscount(totalFaraDiscount);

@@ -4,9 +4,19 @@
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-Web application for managing the stock of a retail store — a Java/Spring Boot version
-of the desktop project [Store Management System (C#/WinForms)](https://github.com/BogdanNVal/c-sharp),
-extended with sales, discounts, VAT (TVA), and authentication.
+I ported the desktop [Store Management System (C#/WinForms)](https://github.com/BogdanNVal/c-sharp)
+to Java and Spring Boot, then added checkout, category discounts, TVA, and a small admin login.
+
+## Live demo
+
+**[https://retail-stock-manager.onrender.com](https://retail-stock-manager.onrender.com)**
+
+[![Live demo](https://img.shields.io/badge/demo-online-brightgreen)](https://retail-stock-manager.onrender.com)
+
+Hosted from branch `cursor/retail-live-demo-f498` (not `main`). Demo login: `admin` / `admin123`.
+
+On Render’s free plan the service sleeps when idle. The first request after that can take 30–60 seconds;
+you may see a short starting page, then the shop.
 
 ## Screenshots
 
@@ -14,32 +24,30 @@ extended with sales, discounts, VAT (TVA), and authentication.
 
 ![Home page](docs/screenshots/home.png)
 
-### Product list (CRUD)
+### Product list
 
 ![Product list](docs/screenshots/produse.png)
 
-### Checkout with discount, TVA, and PDF receipt
+### Checkout (discount, TVA, PDF receipt)
 
 ![Checkout / casa de marcat](docs/screenshots/casa-marcat.png)
 
-## Technologies
+## Stack
 
-- **Java 21 LTS + Spring Boot 3** (Spring MVC, Spring Data JPA, Spring Security)
-- **JSP + JSTL** — classic JEE views alongside Spring
-- **MySQL** (Docker profile) or **H2** in-memory (default `dev` profile)
-- **Docker + Docker Compose** — app, MySQL, and phpMyAdmin
-- **iText7** — PDF receipts
-- Runs with embedded Tomcat (`java -jar`) or as a `.war` on external Tomcat
+- Java 21 LTS, Spring Boot 3 (MVC, Data JPA, Security)
+- Thymeleaf for the UI
+- MySQL (Docker), PostgreSQL (`prod`), or H2 in-memory (`dev`)
+- iText 7 for PDF receipts
+- Docker Compose for the local MySQL stack
 
-## Features
+## What it does
 
-- Product CRUD (name, category, price, stock, EAN) — JSP UI and REST API
-- EAN-8 / EAN-13 validation with check digit
-- Checkout with category discounts and standard TVA (19%) on the receipt
-- Spring Security for admin UI and mutating API calls
-- Optimistic locking (`@Version`) on stock-bearing products
-- JUnit 5 + Mockito tests (service, controllers, PDF smoke test)
-- PDF receipt download from checkout
+- Product CRUD (name, category, price, stock, EAN) in the browser and over REST
+- EAN-8 / EAN-13 check-digit validation
+- Checkout with category discounts and 19% TVA on the receipt
+- PDF receipt download
+- Optimistic locking (`@Version`) on products
+- JUnit 5 + Mockito coverage for services, controllers, and a PDF smoke test
 
 ### Discount rules
 
@@ -48,7 +56,7 @@ extended with sales, discounts, VAT (TVA), and authentication.
 | `ALIMENTAR` | 5% off when quantity ≥ 5 |
 | `NEALIMENTAR` | 10% off when quantity ≥ 3 |
 
-TVA is applied on the discounted total using `AppConfigSingleton.NivelTva` (default **STANDARD** = 19%).
+TVA is applied on the discounted total (`AppConfigSingleton.NivelTva`, default **STANDARD** = 19%).
 
 ## REST API
 
@@ -57,13 +65,10 @@ TVA is applied on the discounted total using `AppConfigSingleton.NivelTva` (defa
 | `GET` | `/api/produse` | public | list products |
 | `GET` | `/api/produse/{id}` | public | product details |
 | `POST` | `/api/produse` | required | create product |
-| `PUT` | `/api/produse/{id}` | required | update product (**`version` required** for optimistic locking) |
+| `PUT` | `/api/produse/{id}` | required | update product (`version` required) |
 | `DELETE` | `/api/produse/{id}` | required | delete product |
 
-Mutating endpoints accept HTTP Basic or an authenticated browser session.
-CSRF is disabled for `/api/**` so scripts can call the API with Basic auth.
-
-Example (create) — **Linux / macOS / Git Bash**:
+Mutating calls accept HTTP Basic or a logged-in browser session. CSRF is off for `/api/**`.
 
 ```bash
 curl -u admin:admin123 -X POST http://localhost:8080/api/produse \
@@ -71,160 +76,79 @@ curl -u admin:admin123 -X POST http://localhost:8080/api/produse \
   -d '{"nume":"Paine","categorie":"ALIMENTAR","pret":5,"cantitateStoc":20,"codEan":"12345670"}'
 ```
 
-**Windows PowerShell** — use `curl.exe` (not `curl`, which is an alias for `Invoke-WebRequest`)
-or `Invoke-RestMethod`. The bash-style `'{"json":...}'` quoting often causes a generic HTTP 400 in PowerShell.
+On Windows PowerShell use `curl.exe` (plain `curl` is `Invoke-WebRequest`).
 
-```powershell
-curl.exe -u admin:admin123 -X POST "http://localhost:8080/api/produse" `
-  -H "Content-Type: application/json" `
-  -d "{\"nume\":\"Paine\",\"categorie\":\"ALIMENTAR\",\"pret\":5,\"cantitateStoc\":20,\"codEan\":\"12345670\"}"
-```
+## Run it
 
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8080/api/produse" -Method Post `
-  -Headers @{ Authorization = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin123")) } `
-  -ContentType "application/json; charset=utf-8" `
-  -Body '{"nume":"Paine","categorie":"ALIMENTAR","pret":5,"cantitateStoc":20,"codEan":"12345670"}'
-```
-
-List products:
-
-```powershell
-curl.exe http://localhost:8080/api/produse
-```
-
-## Profiles
-
-You do **not** need to edit `application.properties` to switch databases (unlike older setups that
-commented H2 vs MySQL lines). Use Spring profiles:
+Needs **JDK 21** and Maven, or Docker. Profiles pick the database — you do not edit `application.properties` to switch:
 
 | Profile | When | Database |
 |---|---|---|
 | `dev` (default) | `mvn spring-boot:run` | H2 in-memory |
-| `docker` | Docker Compose sets `SPRING_PROFILES_ACTIVE=docker` | MySQL |
+| `docker` | Compose sets `SPRING_PROFILES_ACTIVE=docker` | MySQL |
+| `prod` | Render (`SPRING_PROFILES_ACTIVE=prod`) | PostgreSQL |
 
-**Linux / macOS:**
-
-```bash
-# local H2 (default)
-mvn spring-boot:run
-
-# app on host + MySQL (MySQL must already be running, e.g. via Compose)
-SPRING_PROFILES_ACTIVE=docker mvn spring-boot:run
-```
-
-**Windows PowerShell:**
-
-```powershell
-# local H2 (default) — requires JDK 21 + Maven on PATH
-mvn spring-boot:run
-
-# app on host + MySQL
-$env:SPRING_PROFILES_ACTIVE = "docker"
-mvn spring-boot:run
-```
-
-If PowerShell says `mvn` is not recognized, install JDK 21 and Maven (or use Chocolatey:
-`choco install openjdk21 maven`), reopen the terminal, and run `mvn -version`.
-Alternatively skip Maven on the host and use Docker Compose below.
-
-## Credentials
-
-Configure via environment variables (do not commit production secrets).
-A `.env` file is **optional** — defaults work for local demos.
-
-| Variable | Default (local demo) |
-|---|---|
-| `APP_ADMIN_USERNAME` | `admin` |
-| `APP_ADMIN_PASSWORD` | `admin123` |
-| `MYSQL_ROOT_PASSWORD` | `parola_root` |
-| `SPRING_DATASOURCE_*` | see `application-docker.properties` |
-
-Optional project-root `.env` for Docker Compose overrides:
-
-```env
-MYSQL_ROOT_PASSWORD=parola_root
-APP_ADMIN_USERNAME=admin
-APP_ADMIN_PASSWORD=admin123
-```
-
-## Running the tests
-
-```bash
-mvn test
-```
-
-CI runs the same suite on every push/PR (`.github/workflows/ci.yml`).
-
-## Design patterns used
-
-| Pattern | Where |
-|---|---|
-| **Repository / DAO** | `ProdusRepository`, `VanzareRepository` (Spring Data JPA) |
-| **Strategy** | `DiscountStrategy` — food vs non-food discount rules |
-| **Singleton** | `AppConfigSingleton` — store name and TVA rate |
-
-## Test data
-
-`test-data/produse-test.json` includes 10 products with valid EANs.
-
-```bash
-# Linux / macOS
-chmod +x test-data/incarca-produse-test.sh
-./test-data/incarca-produse-test.sh
-```
-
-```powershell
-.\test-data\incarca-produse-test.ps1
-```
-
-Both scripts authenticate with `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD`.
-
-## Running with Docker (persistent data)
-
-Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/macOS) or Docker Engine (Linux).
+### Docker (persistent MySQL)
 
 ```bash
 docker compose up --build
 ```
 
-Same command works in PowerShell. Starts MySQL, phpMyAdmin (`http://localhost:8081`), and the app
-(`http://localhost:8080`) with profile `docker`. Override passwords via a `.env` file or
-`MYSQL_ROOT_PASSWORD` / `APP_ADMIN_PASSWORD`.
+App at `http://localhost:8080`, phpMyAdmin at `http://localhost:8081`.
+`docker compose down` keeps the volume; `docker compose down -v` drops it.
 
-```bash
-docker compose down      # keep data
-docker compose down -v  # also remove the MySQL volume
-```
-
-H2 data is not migrated when you switch to Docker/MySQL — re-seed products if needed.
-
-## Running locally without Docker
-
-Default profile is `dev` (H2). Data is lost when the process stops.
+### Local without Docker
 
 ```bash
 mvn spring-boot:run
 ```
 
-Open `http://localhost:8080`:
+H2 data is gone when the process stops. Useful routes:
 
-- `/produse` — product list / create / edit *(auth)*
+- `/produse` — catalog *(auth)*
 - `/casa-de-marcat` — checkout + PDF *(auth)*
-- `/api/produse` — REST API (GET public; POST/PUT/DELETE auth)
-- `/h2-console` — H2 console (`jdbc:h2:mem:retaildb`, user `sa`, empty password)
+- `/api/produse` — REST (GET public; writes need auth)
+- `/h2-console` — `jdbc:h2:mem:retaildb`, user `sa`, empty password
 
-## Deploying as a WAR on external Tomcat
+### Tests
 
 ```bash
-mvn clean package
-# copy target/retail-stock-manager.war into Tomcat webapps/
+mvn test
 ```
 
-The executable WAR also includes Jasper so `java -jar target/retail-stock-manager.war` can render JSPs.
+CI runs the same suite on every push (`.github/workflows/ci.yml`).
 
-## Why this project
+## Credentials
 
-Built as a study project for a Java/JEE stack typical of enterprise/retail environments:
-Spring, JSP, JPA/SQL, design patterns, and deployment — starting from the same business logic
-(stock, EAN, billing) previously implemented in C#/WinForms.
+Set via environment variables. Defaults are fine for local demos; do not ship them as production secrets.
+
+| Variable | Default |
+|---|---|
+| `APP_ADMIN_USERNAME` | `admin` |
+| `APP_ADMIN_PASSWORD` | `admin123` |
+| `MYSQL_ROOT_PASSWORD` | `parola_root` |
+
+## Test data
+
+`test-data/produse-test.json` has 10 products with valid EANs:
+
+```bash
+./test-data/incarca-produse-test.sh
+```
+
+There is a PowerShell twin in the same folder. Both use `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD`.
+
+## Hosting on Render
+
+Use profile `prod` and a real Postgres URL — H2 on a free host disappears on every sleep.
+
+1. Select branch **`cursor/retail-live-demo-f498`**, Docker runtime.
+2. Set `SPRING_PROFILES_ACTIVE=prod` and `DATABASE_URL` (`postgresql://…?sslmode=require`).
+3. Leave the health-check path empty. The Docker entrypoint binds `$PORT` before Java starts.
+
+First boot after idle can take 30–60 seconds. Optional env: `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD`.
+The [render.yaml](render.yaml) blueprint is a starting point; paste `DATABASE_URL` in the dashboard (`sync: false`).
+
+## WAR on external Tomcat
+
+`mvn clean package` then copy `target/retail-stock-manager.war` into Tomcat’s `webapps/`. Views are Thymeleaf templates on the classpath.

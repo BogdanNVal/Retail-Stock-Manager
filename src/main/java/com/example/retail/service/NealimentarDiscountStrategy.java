@@ -4,9 +4,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * Produsele nealimentare primesc 10% discount la o cantitate >= 3 bucati.
- */
 @Component("nealimentarDiscount")
 public class NealimentarDiscountStrategy implements DiscountStrategy {
 

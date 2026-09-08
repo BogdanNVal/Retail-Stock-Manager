@@ -23,10 +23,8 @@ public class Vanzare {
 
     private int cantitate;
 
-    // Total pe linie inainte de discount (pret unitar * cantitate)
     private BigDecimal totalFaraDiscount;
 
-    // Cat s-a scazut, in lei, datorita discountului (totalFaraDiscount - totalCuDiscount)
     private BigDecimal discountValoare;
 
     private BigDecimal totalCuDiscount;

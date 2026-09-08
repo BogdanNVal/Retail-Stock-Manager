@@ -198,6 +198,12 @@ class ProdusServiceTest {
     }
 
     @Test
+    void inregistreazaBon_cuCantitateNull_aruncaExceptieNuNpe() {
+        assertThrows(IllegalArgumentException.class,
+                () -> produsService.inregistreazaBon(List.of(1L), java.util.Arrays.asList((Integer) null)));
+    }
+
+    @Test
     void inregistreazaBon_cuAcelasiProdusPeMaiMulteLinii_leCombinaSiAplicaDiscountulCorect() {
         Produs paine = new Produs("Paine", Categorie.ALIMENTAR, BigDecimal.valueOf(10), 20, "12345670");
         paine.setId(1L);

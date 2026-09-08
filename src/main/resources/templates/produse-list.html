@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head th:replace="~{fragments/head :: head('Produse')}"></head>
+<body>
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+<main class="page">
+    <h1>Lista produse</h1>
+    <p class="alert" th:if="${eroareStergere != null}" th:text="${eroareStergere}"></p>
+    <div class="toolbar">
+        <a class="btn" th:href="@{/produse/nou}">+ Adaugă produs</a>
+    </div>
+    <p class="empty" th:if="${#lists.isEmpty(produse)}">Nu există produse în catalog. Adaugă primul produs ca să poți vinde.</p>
+    <div class="table-wrap" th:unless="${#lists.isEmpty(produse)}">
+        <table class="data-table">
+            <tr>
+                <th>Nume</th>
+                <th>Categorie</th>
+                <th>Preț</th>
+                <th>Stoc</th>
+                <th>Cod EAN</th>
+                <th></th>
+            </tr>
+            <tr th:each="p : ${produse}">
+                <td th:text="${p.nume}"></td>
+                <td th:text="${p.categorie}"></td>
+                <td th:text="${p.pret}"></td>
+                <td th:text="${p.cantitateStoc}"></td>
+                <td th:text="${p.codEan}"></td>
+                <td class="actions">
+                    <a th:href="@{/produse/{id}/editeaza(id=${p.id})}">Editează</a>
+                    <form th:action="@{/produse/{id}/sterge(id=${p.id})}" method="post">
+                        <button class="btn-danger" type="submit">Șterge</button>
+                    </form>
+                </td>
+            </tr>
+        </table>
+    </div>
+</main>
+</body>
+</html>

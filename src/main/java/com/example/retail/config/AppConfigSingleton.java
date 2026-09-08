@@ -2,10 +2,7 @@ package com.example.retail.config;
 
 import java.math.BigDecimal;
 
-/**
- * Singleton clasic (thread-safe, lazy initialization) pentru setari globale
- * ale aplicatiei (numele magazinului, procentul de TVA).
- */
+/** Shop name and TVA rate used on receipts. */
 public final class AppConfigSingleton {
 
     private static volatile AppConfigSingleton instance;

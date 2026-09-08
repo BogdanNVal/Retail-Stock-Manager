@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ro">
+<head th:replace="~{fragments/head :: head('Autentificare')}"></head>
+<body>
+<header th:replace="~{fragments/header :: siteHeader}"></header>
+<main class="page auth">
+    <h1>Autentificare</h1>
+    <p class="lede">Intră în cont ca să gestionezi produsele și casa de marcat.</p>
+
+    <p class="alert" th:if="${param.error}">Utilizator sau parolă greșite.</p>
+    <p class="alert" th:if="${param.logout}">Ai fost deconectat.</p>
+
+    <form class="form-grid auth-form" th:action="@{/login}" method="post">
+        <label for="username">Utilizator</label>
+        <input id="username" type="text" name="username" autocomplete="username" required autofocus/>
+
+        <label for="password">Parolă</label>
+        <input id="password" type="password" name="password" autocomplete="current-password" required/>
+
+        <p class="form-actions">
+            <button type="submit">Intră în cont</button>
+        </p>
+    </form>
+</main>
+</body>
+</html>
