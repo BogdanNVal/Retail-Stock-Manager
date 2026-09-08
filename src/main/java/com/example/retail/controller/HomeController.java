@@ -10,14 +10,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class HomeController {
 
-    // Citim URL-ul de conexiune folosit de aplicatie (H2 sau MySQL),
+    // Citim URL-ul de conexiune folosit de aplicatie (H2, MySQL, sau PostgreSQL),
     @Value("${spring.datasource.url}")
     private String datasourceUrl;
 
     @GetMapping("/")
     public String acasa(Model model) {
-        boolean h2Activ = datasourceUrl != null && datasourceUrl.contains("h2:mem");
-        model.addAttribute("h2Activ", h2Activ);
+        String dbKind = "mysql";
+        if (datasourceUrl != null) {
+            if (datasourceUrl.contains("h2:")) {
+                dbKind = "h2";
+            } else if (datasourceUrl.contains("postgres")) {
+                dbKind = "postgres";
+            }
+        }
+        model.addAttribute("dbKind", dbKind);
+        model.addAttribute("h2Activ", "h2".equals(dbKind));
         return "home"; // -> WEB-INF/jsp/home.jsp
     }
 }

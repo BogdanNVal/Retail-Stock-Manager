@@ -1,0 +1,23 @@
+# Blueprint for a Render web service. Use the feature branch
+# cursor/retail-live-demo-f498 — do not deploy from main until you merge.
+#
+# Render's free Postgres expires; point DATABASE_URL at Neon (or another
+# hosted Postgres) the same way ApplyLog does. Leave DATABASE_URL unset in
+# this file so you paste it in the dashboard.
+services:
+  - type: web
+    name: retail-stock-manager
+    runtime: docker
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JAVA_TOOL_OPTIONS
+        value: "-XX:+UseSerialGC -XX:MaxRAMPercentage=70"
+      - key: APP_ADMIN_USERNAME
+        value: admin
+      - key: APP_ADMIN_PASSWORD
+        value: admin123
+      - key: DATABASE_URL
+        sync: false

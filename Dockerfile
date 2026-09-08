@@ -4,11 +4,14 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline
 COPY src ./src
-RUN mvn clean package
+# Tests run in GitHub Actions; skip here to keep hosted image builds under free-tier RAM.
+RUN mvn -B -DskipTests package
 
 # --- Etapa 2: imagine finala, doar cu JRE + fisierul .war ---
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/retail-stock-manager.war app.war
+# Fit a 512 MB Render/Cloud Run instance (Serial GC + cap heap to 70% of container RAM).
+ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC -XX:MaxRAMPercentage=70"
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.war"]

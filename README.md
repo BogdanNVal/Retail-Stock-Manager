@@ -8,6 +8,15 @@ Web application for managing the stock of a retail store — a Java/Spring Boot 
 of the desktop project [Store Management System (C#/WinForms)](https://github.com/BogdanNVal/c-sharp),
 extended with sales, discounts, VAT (TVA), and authentication.
 
+## Live demo
+
+Hosted from branch `cursor/retail-live-demo-f498` (not `main`).
+
+**URL:** _pending first deploy_ — see [Hosting](#hosting-render-or-cloud-run) below.
+
+The first request after idle can take 30–60 seconds (free-tier cold start). Demo login:
+`admin` / `admin123`.
+
 ## Screenshots
 
 ### Home
@@ -26,7 +35,7 @@ extended with sales, discounts, VAT (TVA), and authentication.
 
 - **Java 21 LTS + Spring Boot 3** (Spring MVC, Spring Data JPA, Spring Security)
 - **JSP + JSTL** — classic JEE views alongside Spring
-- **MySQL** (Docker profile) or **H2** in-memory (default `dev` profile)
+- **MySQL** (Docker profile), **PostgreSQL** (hosted `prod` profile), or **H2** in-memory (default `dev` profile)
 - **Docker + Docker Compose** — app, MySQL, and phpMyAdmin
 - **iText7** — PDF receipts
 - Runs with embedded Tomcat (`java -jar`) or as a `.war` on external Tomcat
@@ -102,6 +111,7 @@ commented H2 vs MySQL lines). Use Spring profiles:
 |---|---|---|
 | `dev` (default) | `mvn spring-boot:run` | H2 in-memory |
 | `docker` | Docker Compose sets `SPRING_PROFILES_ACTIVE=docker` | MySQL |
+| `prod` | Render / Cloud Run (`SPRING_PROFILES_ACTIVE=prod`) | PostgreSQL (Neon or other hosted DB) |
 
 **Linux / macOS:**
 
@@ -222,6 +232,53 @@ mvn clean package
 ```
 
 The executable WAR also includes Jasper so `java -jar target/retail-stock-manager.war` can render JSPs.
+
+## Hosting (Render or Cloud Run)
+
+Do **not** use the `dev` H2 database on a free host — the filesystem is ephemeral and the catalog disappears on every sleep/redeploy (same lesson as [ApplyLog](https://github.com/BogdanNVal/Applylog)). Profile `prod` talks to **hosted Postgres**.
+
+Set these environment variables:
+
+| Variable | Purpose |
+|---|---|
+| `SPRING_PROFILES_ACTIVE` | `prod` |
+| `DATABASE_URL` | Neon/Render-style `postgresql://user:pass@host/db?sslmode=require` (converted to JDBC on startup) |
+| `SPRING_DATASOURCE_URL` | Optional override if you prefer a ready `jdbc:postgresql://…` URL |
+| `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` | Demo login (defaults `admin` / `admin123`) |
+| `PORT` | Set by the host; the app binds `server.port=${PORT:8080}` |
+| `JAVA_TOOL_OPTIONS` | Already `-XX:+UseSerialGC -XX:MaxRAMPercentage=70` in the Docker image |
+
+The JVM is capped so a **512 MB** instance has a chance to boot. If Render’s free web service OOMs or never becomes healthy, use Cloud Run instead (do not pay for Render Starter unless both fail).
+
+### Render (first try)
+
+1. Create a Neon Postgres database (free plan does not expire the way Render’s free Postgres does).
+2. In Render: **New → Web Service** from this GitHub repo.
+3. Select branch **`cursor/retail-live-demo-f498`**, not `main`.
+4. Runtime: Docker. Health check path: `/`.
+5. Paste `DATABASE_URL` from Neon and set `SPRING_PROFILES_ACTIVE=prod`.
+6. Optional: this repo’s [render.yaml](render.yaml) is a blueprint; `DATABASE_URL` is `sync: false` so you paste it in the dashboard.
+
+The service will sleep when idle. First request after sleep can take 30–60 seconds.
+
+### Cloud Run (if Render free cannot boot)
+
+Needs a Google account. From this directory, after `gcloud auth login` and a project with billing (Cloud Run’s free tier still covers a sleeping demo):
+
+```bash
+gcloud builds submit --tag REGION-docker.pkg.dev/PROJECT/retail/retail-stock-manager
+gcloud run deploy retail-stock-manager \
+  --image REGION-docker.pkg.dev/PROJECT/retail/retail-stock-manager \
+  --region REGION \
+  --memory 512Mi \
+  --allow-unauthenticated \
+  --set-env-vars SPRING_PROFILES_ACTIVE=prod,APP_ADMIN_USERNAME=admin,APP_ADMIN_PASSWORD=admin123 \
+  --set-secrets DATABASE_URL=DATABASE_URL:latest
+```
+
+If 512Mi is still too small, retry with `--memory 1Gi`. Scale-to-zero means you are not paying for idle time. Cold start is similar to Render.
+
+An always-on alternative (not the first attempt): Oracle Cloud Always Free ARM VM + `docker compose` with MySQL.
 
 ## Why this project
 

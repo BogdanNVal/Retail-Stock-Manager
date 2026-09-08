@@ -38,12 +38,21 @@
         </div>
 
         <c:choose>
-            <c:when test="${h2Activ}">
+            <c:when test="${dbKind == 'h2'}">
                 <div class="sectiune">
                     <h2>Baza de date (H2 console) <span class="tag">profil dev</span></h2>
                     <p>Vezi direct continutul tabelelor din baza de date in-memory.</p>
                     <a href="<c:url value='/h2-console'/>">Deschide H2 console</a>
                     <p style="margin-top:12px">JDBC URL: <code>jdbc:h2:mem:retaildb</code> &middot; user: <code>sa</code> &middot; parola: (goala)</p>
+                </div>
+            </c:when>
+            <c:when test="${dbKind == 'postgres'}">
+                <div class="sectiune">
+                    <h2>Baza de date: PostgreSQL <span class="tag">profil prod</span></h2>
+                    <p>
+                        Aplicatia ruleaza cu <strong>PostgreSQL</strong> (Neon sau alt host).
+                        Datele <strong>persista</strong> intre restart-uri; discul ephemeral al hostului nu e folosit.
+                    </p>
                 </div>
             </c:when>
             <c:otherwise>
