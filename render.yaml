@@ -9,7 +9,6 @@ services:
     name: retail-stock-manager
     runtime: docker
     plan: free
-    healthCheckPath: /
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
