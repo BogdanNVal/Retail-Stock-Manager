@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 """Bind the public PORT before the JVM starts (Render port detection).
 
-Render restarts the deploy when it discovers the HTTP port mid-boot
-(\"New primary port detected\"). Binding here in the entrypoint means the
-port is open from process start. Until Tomcat answers HTTP quickly, serve a
-starting page; afterward reverse-proxy to 127.0.0.1:internal.
-
-Important: Tomcat can accept TCP before Spring is ready. A long proxy
-timeout leaves Render/Cloudflare with 0 bytes until they give up — the
-browser looks like the page \"does not load\" even though this process
-eventually logs HTTP 200. Keep backend timeouts short and always
-Connection: close.
+Until Spring Boot publishes /internal/ready, every public request gets the
+starting page immediately (no wait on Tomcat). A background probe flips to
+reverse-proxy mode only after ready returns 200.
 """
 
 from __future__ import annotations
@@ -18,14 +11,14 @@ from __future__ import annotations
 import http.client
 import socket
 import sys
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-# Connect must fail fast when nothing listens. Request must fail fast when
-# Tomcat accepted TCP but Spring cannot answer yet (boot window).
 CONNECT_TIMEOUT_SEC = 0.25
-REQUEST_TIMEOUT_SEC = 2.0
-# After the first successful proxied response, allow slower first JSP compile.
-WARM_REQUEST_TIMEOUT_SEC = 30.0
+READY_TIMEOUT_SEC = 1.0
+PROXY_TIMEOUT_SEC = 60.0
+READY_POLL_SEC = 1.0
 
 SKIP_REQ = {
     "connection",
@@ -70,11 +63,39 @@ STARTING_HTML = """<!DOCTYPE html>
 """
 
 
-def make_handler(internal_port: int):
-    state = {"warm": False}
+def probe_ready(internal_port: int) -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", internal_port), CONNECT_TIMEOUT_SEC):
+            pass
+    except OSError:
+        return False
+    conn = http.client.HTTPConnection("127.0.0.1", internal_port, timeout=READY_TIMEOUT_SEC)
+    try:
+        conn.request("GET", "/internal/ready", headers={"Connection": "close"})
+        resp = conn.getresponse()
+        body = resp.read()
+        return resp.status == 200 and body.strip() == b"ok"
+    except Exception:
+        return False
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
+
+def readiness_loop(internal_port: int, state: dict):
+    while not state["warm"]:
+        if probe_ready(internal_port):
+            state["warm"] = True
+            sys.stderr.write("[early-proxy] backend ready — forwarding traffic to Tomcat\n")
+            sys.stderr.flush()
+            return
+        time.sleep(READY_POLL_SEC)
+
+
+def make_handler(internal_port: int, state: dict):
     class Handler(BaseHTTPRequestHandler):
-        # HTTP/1.0 + Connection: close avoids keep-alive stalls behind Render.
         protocol_version = "HTTP/1.0"
         close_connection = True
 
@@ -83,6 +104,9 @@ def make_handler(internal_port: int):
             sys.stderr.flush()
 
         def do_HEAD(self):
+            if not state["warm"]:
+                self._send(200, b"", "text/html; charset=UTF-8", include_body=False)
+                return
             if self._proxy_or_none(include_body=False) is None:
                 self._send(200, b"", "text/html; charset=UTF-8", include_body=False)
 
@@ -105,6 +129,10 @@ def make_handler(internal_port: int):
             self._handle(True)
 
         def _handle(self, include_body: bool):
+            # Never block the browser on Tomcat until ApplicationReadyEvent.
+            if not state["warm"]:
+                self._starting(include_body)
+                return
             if self._proxy_or_none(include_body=include_body) is None:
                 self._starting(include_body)
 
@@ -128,20 +156,10 @@ def make_handler(internal_port: int):
             except OSError:
                 pass
 
-        def _backend_accepts(self) -> bool:
-            try:
-                with socket.create_connection(("127.0.0.1", internal_port), CONNECT_TIMEOUT_SEC):
-                    return True
-            except OSError:
-                return False
-
         def _proxy_or_none(self, include_body: bool):
-            if not self._backend_accepts():
-                return None
             length = int(self.headers.get("Content-Length") or 0)
             payload = self.rfile.read(length) if length > 0 else b""
-            timeout = WARM_REQUEST_TIMEOUT_SEC if state["warm"] else REQUEST_TIMEOUT_SEC
-            conn = http.client.HTTPConnection("127.0.0.1", internal_port, timeout=timeout)
+            conn = http.client.HTTPConnection("127.0.0.1", internal_port, timeout=PROXY_TIMEOUT_SEC)
             try:
                 headers = {"Connection": "close"}
                 for key, value in self.headers.items():
@@ -170,11 +188,17 @@ def make_handler(internal_port: int):
                     self.wfile.flush()
                 except OSError:
                     pass
-                state["warm"] = True
                 return True
             except Exception as ex:
-                sys.stderr.write(f"[early-proxy] backend not ready: {ex!r}\n")
+                sys.stderr.write(f"[early-proxy] proxy error: {ex!r}\n")
                 sys.stderr.flush()
+                state["warm"] = False
+                threading.Thread(
+                    target=readiness_loop,
+                    args=(internal_port, state),
+                    name="ready-reprobe",
+                    daemon=True,
+                ).start()
                 return None
             finally:
                 try:
@@ -191,7 +215,14 @@ def main():
         sys.exit(2)
     public_port = int(sys.argv[1])
     internal_port = int(sys.argv[2])
-    server = ThreadingHTTPServer(("0.0.0.0", public_port), make_handler(internal_port))
+    state = {"warm": False}
+    threading.Thread(
+        target=readiness_loop,
+        args=(internal_port, state),
+        name="ready-probe",
+        daemon=True,
+    ).start()
+    server = ThreadingHTTPServer(("0.0.0.0", public_port), make_handler(internal_port, state))
     print(
         f"Entrypoint HTTP bind on 0.0.0.0:{public_port} "
         f"(Tomcat will listen on 127.0.0.1:{internal_port})",

@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/produse", "/api/produse/*").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/internal/ready").permitAll()
                         .requestMatchers("/css/**", "/js/**").permitAll()
                         .requestMatchers("/produse/**", "/casa-de-marcat/**").authenticated()
                         .anyRequest().permitAll()
