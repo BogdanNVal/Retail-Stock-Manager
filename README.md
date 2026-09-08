@@ -12,10 +12,17 @@ extended with sales, discounts, VAT (TVA), and authentication.
 
 Hosted from branch `cursor/retail-live-demo-f498` (not `main`).
 
-**URL:** _pending first deploy_ — see [Hosting](#hosting-render-or-cloud-run) below.
+**URL:** https://retail-stock-manager.onrender.com
 
-The first request after idle can take 30–60 seconds (free-tier cold start). Demo login:
-`admin` / `admin123`.
+Render prints **Your service is live** as soon as Java **starts**, about a minute **before** the site can answer. Wait in the logs for:
+
+```text
+Started RetailApplication
+```
+
+Then refresh the URL. Opening it earlier looks like a blank/error page. After idle, the free service sleeps; the next request can take 30–60 seconds.
+
+Demo login: `admin` / `admin123`.
 
 ## Screenshots
 
