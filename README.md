@@ -1,16 +1,14 @@
 # Retail Stock Manager
 
-I ported the desktop [Store Management System (C#/WinForms)](https://github.com/BogdanNVal/c-sharp)
-to Java and Spring Boot, then added checkout, category discounts, TVA, and a small admin login.
+I had a C# desktop store app ([Store Management System](https://github.com/BogdanNVal/c-sharp)) and I moved it to Java / Spring Boot. Products, checkout, category discounts, TVA, a PDF receipt, and a small admin login.
 
 ## Live demo
 
 **[https://retail-stock-manager.onrender.com](https://retail-stock-manager.onrender.com)**
 
-It's on branch `cursor/retail-live-demo-f498`, not `main`. Log in with `admin` / `admin123`.
+Login: `admin` / `admin123`
 
-Render's free plan sleeps when idle. The first hit after that can take 30–60 seconds —
-you'll get a short "starting" page, then the shop.
+It's on Render's free plan, so after a while it sleeps. First open can take 30–60 seconds. You'll get a short starting page, then the shop.
 
 ## Screenshots
 
@@ -22,69 +20,68 @@ you'll get a short "starting" page, then the shop.
 
 ![Product list](docs/screenshots/produse.png)
 
-### Checkout (discount, TVA, PDF receipt)
+### Checkout
 
 ![Checkout / casa de marcat](docs/screenshots/casa-marcat.png)
 
 ## What it does
 
-- Add / edit / delete products (name, category, price, stock, EAN) in the browser or over REST
-- EAN-8 / EAN-13 check digits
-- Checkout with category discounts and 19% TVA on the receipt
-- PDF receipt download
-- Optimistic locking on products so two checkouts don't stomp each other
+- Add, edit, delete products (name, category, price, stock, EAN)
+- Checks EAN-8 / EAN-13
+- Checkout with discounts and 19% TVA
+- Download the receipt as PDF
+- Two people can't overwrite the same product by accident (`@Version`)
 
-### Discount rules
+Discounts:
 
 | Category | Rule |
 |---|---|
-| `ALIMENTAR` | 5% off when quantity ≥ 5 |
-| `NEALIMENTAR` | 10% off when quantity ≥ 3 |
+| `ALIMENTAR` | 5% off if quantity ≥ 5 |
+| `NEALIMENTAR` | 10% off if quantity ≥ 3 |
 
-TVA is 19% on the discounted total (`AppConfigSingleton.NivelTva`, default STANDARD).
+TVA is 19% on the total after discount.
 
 ## Run it
 
-Needs JDK 21 and Maven, or Docker. The profile picks the database — you don't edit
-`application.properties` to switch.
+JDK 21 + Maven, or Docker. Profile picks the database, you don't have to edit properties.
 
-| Profile | When | Database |
+| Profile | How | Database |
 |---|---|---|
-| `dev` (default) | `mvn spring-boot:run` | H2 in-memory |
-| `docker` | Compose sets `SPRING_PROFILES_ACTIVE=docker` | MySQL |
-| `prod` | Render (`SPRING_PROFILES_ACTIVE=prod`) | PostgreSQL |
+| `dev` | `mvn spring-boot:run` | H2 (in memory) |
+| `docker` | `docker compose up --build` | MySQL |
+| `prod` | Render | PostgreSQL |
 
-### Docker (MySQL stays around)
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-App at http://localhost:8080, phpMyAdmin at http://localhost:8081.
-`docker compose down` keeps the volume; `docker compose down -v` wipes it.
+App: http://localhost:8080  
+phpMyAdmin: http://localhost:8081
 
-### Local without Docker
+`docker compose down` keeps the data. `docker compose down -v` deletes it.
+
+### Without Docker
 
 ```bash
 mvn spring-boot:run
 ```
 
-H2 is empty again when the process stops. Useful routes:
+H2 is empty when you stop it.
 
-- `/produse` — catalog (needs login)
-- `/casa-de-marcat` — checkout + PDF (needs login)
-- `/api/produse` — REST (GET is public; writes need auth)
-- `/h2-console` — `jdbc:h2:mem:retaildb`, user `sa`, empty password
-
-Writes to `/api/produse` take HTTP Basic or a logged-in session. CSRF is off for `/api/**`.
+- `/produse` — catalog (login)
+- `/casa-de-marcat` — checkout + PDF (login)
+- `/api/produse` — GET is public, writes need login
+- `/h2-console` — `jdbc:h2:mem:retaildb`, user `sa`, no password
 
 ```bash
-curl -u admin:admin123 -X POST http://localhost:8080/api/produse \
+curl.exe -u admin:admin123 -X POST http://localhost:8080/api/produse \
   -H "Content-Type: application/json" \
   -d '{"nume":"Paine","categorie":"ALIMENTAR","pret":5,"cantitateStoc":20,"codEan":"12345670"}'
 ```
 
-On Windows PowerShell use `curl.exe` — plain `curl` is `Invoke-WebRequest`.
+(`curl.exe` on Windows, not `curl`)
 
 ### Tests
 
@@ -92,11 +89,7 @@ On Windows PowerShell use `curl.exe` — plain `curl` is `Invoke-WebRequest`.
 mvn test
 ```
 
-Same suite runs in GitHub Actions.
-
-## Credentials
-
-Defaults are fine locally. Don't ship them as production secrets.
+## Login / passwords
 
 | Variable | Default |
 |---|---|
@@ -104,24 +97,27 @@ Defaults are fine locally. Don't ship them as production secrets.
 | `APP_ADMIN_PASSWORD` | `admin123` |
 | `MYSQL_ROOT_PASSWORD` | `parola_root` |
 
-## Test data
-
-`test-data/produse-test.json` has 10 products with valid EANs:
+## Sample products
 
 ```bash
 ./test-data/incarca-produse-test.sh
 ```
 
-There's a PowerShell script in the same folder. Both use `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD`.
+Or the `.ps1` next to it. Sign up / start the app first. Same username and password as above.
 
-## Hosting on Render
+## Render
 
-Use profile `prod` and a real Postgres URL — H2 on a free host vanishes every time the service sleeps.
+Profile `prod` and a real Postgres URL. H2 on a free host disappears every time it sleeps.
 
+<<<<<<< HEAD
 1. Deploy repo as a Docker service.
 2. Set `SPRING_PROFILES_ACTIVE=prod` and paste `DATABASE_URL` in the dashboard (`postgresql://…?sslmode=require`).
 3. Leave the health-check path empty. The entrypoint binds `$PORT` before Java starts.
+=======
+- Docker web service from this repo
+- `SPRING_PROFILES_ACTIVE=prod`
+- `DATABASE_URL` in the dashboard (`postgresql://…?sslmode=require`)
+- leave the health check path empty
+>>>>>>> ede9081 (Rewrite README)
 
-[render.yaml](render.yaml) is a starting point; `DATABASE_URL` stays `sync: false` on purpose.
-
-`mvn clean package` also builds a WAR you can drop into Tomcat if you need that.
+See [render.yaml](render.yaml).
