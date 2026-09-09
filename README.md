@@ -118,7 +118,7 @@ There's a PowerShell script in the same folder. Both use `APP_ADMIN_USERNAME` / 
 
 Use profile `prod` and a real Postgres URL — H2 on a free host vanishes every time the service sleeps.
 
-1. Deploy branch **`cursor/retail-live-demo-f498`** as a Docker service.
+1. Deploy repo as a Docker service.
 2. Set `SPRING_PROFILES_ACTIVE=prod` and paste `DATABASE_URL` in the dashboard (`postgresql://…?sslmode=require`).
 3. Leave the health-check path empty. The entrypoint binds `$PORT` before Java starts.
 
