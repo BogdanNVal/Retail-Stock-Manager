@@ -109,15 +109,9 @@ Or the `.ps1` next to it. Sign up / start the app first. Same username and passw
 
 Profile `prod` and a real Postgres URL. H2 on a free host disappears every time it sleeps.
 
-<<<<<<< HEAD
-1. Deploy repo as a Docker service.
-2. Set `SPRING_PROFILES_ACTIVE=prod` and paste `DATABASE_URL` in the dashboard (`postgresql://…?sslmode=require`).
-3. Leave the health-check path empty. The entrypoint binds `$PORT` before Java starts.
-=======
 - Docker web service from this repo
 - `SPRING_PROFILES_ACTIVE=prod`
 - `DATABASE_URL` in the dashboard (`postgresql://…?sslmode=require`)
 - leave the health check path empty
->>>>>>> ede9081 (Rewrite README)
 
 See [render.yaml](render.yaml).
