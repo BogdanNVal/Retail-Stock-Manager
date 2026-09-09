@@ -4,12 +4,9 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Converts hosted DATABASE_URL values (Neon, Render, Heroku) into a JDBC URL
- * and optional username/password. The PostgreSQL driver does not treat
- * {@code jdbc:postgresql://user:pass@host/db} as credentials in the host part.
- * <p>
- * Passwords may contain {@code @} (encoded or raw). Parsing uses the last
- * {@code @} before the path so {@code user:p@ss@host/db} still works.
+ * Neon/Render hand you postgres://user:pass@host/db. The JDBC driver does
+ * not treat user:pass in the host as credentials, so we split them out.
+ * Passwords can contain @ — we use the last @ before the path.
  */
 public final class DatabaseUrls {
 
@@ -111,9 +108,8 @@ public final class DatabaseUrls {
     }
 
     /**
-     * Neon often appends libpq-only {@code channel_binding=require}. Spring Boot 3.2's
-     * pgJDBC (42.6.x) does not use that name ({@code channelBinding}); leave it in the
-     * URL and some drivers warn or stall. Keep {@code sslmode=require}.
+     * Neon likes to append channel_binding=require. Spring Boot 3.2's pgJDBC
+     * doesn't know that name and can stall. Drop it; keep sslmode=require.
      */
     static String sanitizeQuery(String rawQuery) {
         StringBuilder out = new StringBuilder();

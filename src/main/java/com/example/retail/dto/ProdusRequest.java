@@ -26,7 +26,7 @@ public class ProdusRequest {
     @NotBlank(message = "Codul EAN este obligatoriu")
     private String codEan;
 
-    /** Optional optimistic-lock token; when present on PUT, must match the current entity version. */
+    // Needed on PUT so two people editing stock don't overwrite each other.
     private Long version;
 
     public ProdusRequest() {

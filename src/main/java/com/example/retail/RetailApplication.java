@@ -10,7 +10,6 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 
 import java.io.IOException;
 
-/** Boots the app as a JAR, or as a WAR on external Tomcat. */
 @SpringBootApplication
 public class RetailApplication extends SpringBootServletInitializer {
 
@@ -22,14 +21,14 @@ public class RetailApplication extends SpringBootServletInitializer {
     }
 
     /**
-     * On Render/Cloud Run without the Docker entrypoint proxy, open {@code PORT}
-     * before Spring finishes booting so browsers are not connection-refused.
-     * Prefer {@code RETAIL_ENTRYPOINT_PROXY=1} (Docker entrypoint binds first)
-     * so Render never mid-boot restarts with "New primary port detected".
+     * On Render without the Docker proxy, open PORT before Spring is ready so
+     * browsers don't get connection refused. Prefer RETAIL_ENTRYPOINT_PROXY=1
+     * (entrypoint binds first) — otherwise Render restarts with
+     * "New primary port detected".
      */
     static void bindPublicPortBeforeSpring() {
         if ("1".equals(System.getenv("RETAIL_ENTRYPOINT_PROXY"))) {
-            // SERVER_PORT / SERVER_ADDRESS already set by docker/entrypoint.sh
+            // entrypoint.sh already set SERVER_PORT / SERVER_ADDRESS
             return;
         }
         HostedPortBinding.Ports ports = HostedPortBinding.fromEnvironment();

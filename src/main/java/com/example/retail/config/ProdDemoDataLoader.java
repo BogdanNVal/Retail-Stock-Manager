@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Seeds a handful of products the first time the hosted demo starts against an empty database.
+ * First boot on an empty hosted DB gets a few sample products.
  */
 @Component
 @Profile("prod")

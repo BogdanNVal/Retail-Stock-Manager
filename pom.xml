@@ -14,7 +14,7 @@
     <groupId>com.example</groupId>
     <artifactId>retail-stock-manager</artifactId>
     <version>1.0.0</version>
-    <!-- WAR so the app can run on external Tomcat, not only the embedded server. -->
+    <!-- WAR so it can also sit on an external Tomcat. -->
     <packaging>war</packaging>
 
     <properties>
@@ -46,7 +46,7 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- Thymeleaf instead of JSP/Jasper — Jasper was too heavy for 512 MB hosts. -->
+        <!-- Thymeleaf, not JSP — Jasper was too heavy for a 512 MB host. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
@@ -56,21 +56,21 @@
             <artifactId>thymeleaf-extras-springsecurity6</artifactId>
         </dependency>
 
-        <!-- MySQL driver (Docker Compose / local MySQL) -->
+        <!-- MySQL (Docker Compose) -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- PostgreSQL driver (hosted demo: Neon / Cloud SQL) -->
+        <!-- Postgres (hosted demo) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- H2 pentru testare rapida locala, fara instalare de MySQL -->
+        <!-- H2 for local runs without installing MySQL -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>

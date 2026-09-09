@@ -65,7 +65,7 @@ public class ProdusService {
     @Transactional
     public Produs actualizeazaProdus(Long id, Produs dateNoi) {
         Produs existent = obtineProdus(id);
-        // Version is required so REST clients cannot silently overwrite concurrent stock changes.
+        // Without version, a REST client can silently overwrite a concurrent stock change.
         if (dateNoi.getVersion() == null || !Objects.equals(dateNoi.getVersion(), existent.getVersion())) {
             throw new ObjectOptimisticLockingFailureException(Produs.class, id);
         }
@@ -95,9 +95,8 @@ public class ProdusService {
     }
 
     /**
-     * Processes a single sale line without attaching it to a {@link Bon}.
-     * Kept for unit tests that exercise discount/stock logic in isolation;
-     * the UI and production checkout path use {@link #inregistreazaBon}.
+     * One sale line, not attached to a Bon. Tests use this; the checkout page
+     * goes through inregistreazaBon.
      */
     @Transactional
     public Vanzare inregistreazaVanzare(Long produsId, int cantitate) {

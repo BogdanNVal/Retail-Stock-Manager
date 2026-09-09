@@ -18,16 +18,15 @@ public class EanValidator {
     }
 
     /**
-     * Calculeaza cifra de control pentru un cod EAN fara ultima cifra.
-     * Regula standard: suma ponderata (alternanta 1x/3x) a cifrelor, apoi
-     * rotunjire in sus la urmatorul multiplu de 10.
+     * Cifra de control EAN: ponderi 1x/3x de la dreapta, apoi până la
+     * următorul multiplu de 10.
      */
     public int calculeazaCifraControl(String codFaraControl) {
         int suma = 0;
         int lungime = codFaraControl.length();
         for (int i = 0; i < lungime; i++) {
             int cifra = Character.getNumericValue(codFaraControl.charAt(i));
-            // Pozitiile numarate de la dreapta la stanga alterneaza ponderea 3 / 1
+            // De la dreapta: 3, 1, 3, 1…
             boolean estePonderata = (lungime - i) % 2 != 0;
             suma += estePonderata ? cifra * 3 : cifra;
         }

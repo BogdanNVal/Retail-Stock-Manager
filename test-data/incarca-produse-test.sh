@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
-# Load sample products via the REST API (POST requires authentication).
+# POST sample products. Needs auth.
 #
-# Usage (from project root):
 #   ./test-data/incarca-produse-test.sh
 #
-# Optional env vars:
-#   BASE_URL=http://localhost:8080
-#   APP_ADMIN_USERNAME=admin
-#   APP_ADMIN_PASSWORD=admin123
+# Optional: BASE_URL, APP_ADMIN_USERNAME, APP_ADMIN_PASSWORD
 
 set -euo pipefail
 

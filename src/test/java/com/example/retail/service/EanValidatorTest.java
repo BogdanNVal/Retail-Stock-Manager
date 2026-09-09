@@ -18,7 +18,7 @@ class EanValidatorTest {
 
     @Test
     void codCuCifraControlGresita_esteRespins() {
-        // ultima cifra e modificata intentionat, cifra de control corecta e 0
+        // ultima cifră e greșită dinadins — controlul corect e 0
         assertFalse(validator.esteValid("12345679"));
     }
 

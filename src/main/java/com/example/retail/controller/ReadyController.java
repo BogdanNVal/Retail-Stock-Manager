@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Loopback readiness probe for {@code docker/early_proxy.py}. Not for public use
- * (the proxy only calls 127.0.0.1), but left unauthenticated and cheap.
+ * /internal/ready for docker/early_proxy.py. Cheap, unauthenticated, only
+ * meant to be called on 127.0.0.1.
  */
 @RestController
 public class ReadyController {

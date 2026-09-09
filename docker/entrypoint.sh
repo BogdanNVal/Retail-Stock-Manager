@@ -1,7 +1,6 @@
 #!/bin/sh
-# Docker entrypoint for hosted demos (Render / Cloud Run).
-# Bind $PORT immediately (before the JVM) so Render does not mid-boot
-# restart with "New primary port detected".
+# Bind $PORT before the JVM so Render doesn't restart with
+# "New primary port detected".
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
@@ -27,7 +26,7 @@ if [ "$hosted" -eq 1 ]; then
   export SERVER_ADDRESS=127.0.0.1
   python3 "$PROXY_PY" "$PUBLIC_PORT" "$INTERNAL_PORT" &
   PROXY_PID=$!
-  # Give the listener a moment so Render's first scan sees an open port.
+  # Wait until the port is actually open so Render's first scan succeeds.
   i=0
   while [ "$i" -lt 50 ]; do
     if python3 -c "import socket;s=socket.socket();s.settimeout(0.2);s.connect(('127.0.0.1', int('$PUBLIC_PORT')));s.close()" 2>/dev/null; then

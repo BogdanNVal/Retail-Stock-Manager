@@ -9,8 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Turn Neon/Render {@code DATABASE_URL} ({@code postgres://} / {@code postgresql://})
- * into JDBC properties. Runs before profiles are fully activated.
+ * Turn DATABASE_URL (postgres://…) into JDBC properties before profiles finish loading.
  */
 public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProcessor {
 

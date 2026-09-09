@@ -5,7 +5,7 @@
 <header th:replace="~{fragments/header :: siteHeader}"></header>
 <main class="page">
     <h1>Casa de marcat</h1>
-    <p class="lede">Alege produsele și cantitățile. Discountul și TVA-ul se calculează pe bon.</p>
+    <p class="lede">Alege ce vinzi. Discountul și TVA-ul apar pe bon, nu trebuie calculate de mână.</p>
 
     <div class="alert" th:if="${eroare != null}" th:text="${eroare}"></div>
 
@@ -39,7 +39,7 @@
         <p><a th:href="@{/casa-de-marcat/{id}/bon-pdf(id=${bon.id})}">Descarcă bonul (PDF)</a></p>
     </div>
 
-    <p class="empty" th:if="${#lists.isEmpty(produse)}">Nu există produse de vândut. Adaugă mai întâi un produs în catalog.</p>
+    <p class="empty" th:if="${#lists.isEmpty(produse)}">Nu e nimic de vândut. Adaugă întâi un produs în catalog.</p>
 
     <form th:unless="${#lists.isEmpty(produse)}" th:action="@{/casa-de-marcat/vinde}" method="post" id="formVanzare">
         <div class="table-wrap">

@@ -2,7 +2,6 @@ package com.example.retail.config;
 
 import java.math.BigDecimal;
 
-/** Shop name and TVA rate used on receipts. */
 public final class AppConfigSingleton {
 
     private static volatile AppConfigSingleton instance;

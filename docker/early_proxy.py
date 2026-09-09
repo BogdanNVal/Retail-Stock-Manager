@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Bind the public PORT before the JVM starts (Render port detection).
+"""Grab PORT before the JVM so Render's port check succeeds.
 
-Until Spring Boot publishes /internal/ready, every public request gets the
-starting page immediately (no wait on Tomcat). A background probe flips to
-reverse-proxy mode only after ready returns 200.
+Until Spring answers /internal/ready, every request gets the starting page.
+A background probe switches to reverse-proxy once ready returns 200.
 """
 
 from __future__ import annotations
@@ -57,9 +56,9 @@ STARTING_HTML = """<!DOCTYPE html>
 <body>
   <main>
     <h1>Retail Stock Manager is starting</h1>
-    <p>The host already printed "Your service is live", but Spring Boot
-    is still booting on the free plan. This page refreshes every 5 seconds.
-    First boot can take 1-2 minutes; after idle sleep, 30-60 seconds.</p>
+    <p>Render already says the service is live, but Spring is still starting.
+    This page refreshes every 5 seconds. First boot can take a couple of minutes;
+    after idle sleep, more like 30-60 seconds.</p>
   </main>
 </body>
 </html>
@@ -115,8 +114,7 @@ def ensure_readiness_probe(internal_port: int, state: dict):
 
 
 def read_exact(stream, size: int) -> bytes:
-    """Read exactly size bytes. Do not read size+1 — on keep-alive sockets
-    that blocks forever waiting for a byte that is not part of the body."""
+    """Don't read size+1 — on keep-alive that waits forever for a byte that isn't coming."""
     if size <= 0:
         return b""
     chunks = []

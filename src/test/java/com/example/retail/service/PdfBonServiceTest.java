@@ -26,7 +26,7 @@ class PdfBonServiceTest {
         bon.setTotalTva(BigDecimal.valueOf(3.80));
         bon.setTotalCuTva(BigDecimal.valueOf(23.80));
 
-        // Reflection-friendly: Bon id is used in PDF text; leave null for smoke test
+        // Bon id stays null; the PDF still has enough to smoke-test.
         byte[] pdf = new PdfBonService().genereazaBonVanzare(bon);
 
         assertTrue(pdf.length > 100);

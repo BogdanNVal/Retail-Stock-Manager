@@ -1,13 +1,8 @@
-# Incarca produsele de test in aplicatie, printr-un POST pentru fiecare,
-# catre REST API-ul aplicatiei. POST necesita autentificare (HTTP Basic).
+# POST produsele de test. Trebuie autentificare (HTTP Basic).
 #
-# Rulare (din radacina proiectului, in PowerShell):
 #   .\test-data\incarca-produse-test.ps1
 #
-# Optional:
-#   $env:BASE_URL = "http://localhost:8080"
-#   $env:APP_ADMIN_USERNAME = "admin"
-#   $env:APP_ADMIN_PASSWORD = "admin123"
+# Optional: $env:BASE_URL, $env:APP_ADMIN_USERNAME, $env:APP_ADMIN_PASSWORD
 
 $baseUrl = if ($env:BASE_URL) { $env:BASE_URL } else { "http://localhost:8080" }
 $username = if ($env:APP_ADMIN_USERNAME) { $env:APP_ADMIN_USERNAME } else { "admin" }

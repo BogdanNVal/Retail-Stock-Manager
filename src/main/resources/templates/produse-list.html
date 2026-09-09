@@ -9,7 +9,7 @@
     <div class="toolbar">
         <a class="btn" th:href="@{/produse/nou}">+ Adaugă produs</a>
     </div>
-    <p class="empty" th:if="${#lists.isEmpty(produse)}">Nu există produse în catalog. Adaugă primul produs ca să poți vinde.</p>
+    <p class="empty" th:if="${#lists.isEmpty(produse)}">Catalogul e gol. Adaugă un produs ca să poți vinde.</p>
     <div class="table-wrap" th:unless="${#lists.isEmpty(produse)}">
         <table class="data-table">
             <tr>

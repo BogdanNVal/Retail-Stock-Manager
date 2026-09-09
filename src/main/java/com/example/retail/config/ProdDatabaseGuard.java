@@ -4,9 +4,8 @@ import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEven
 import org.springframework.context.ApplicationListener;
 
 /**
- * Fail fast in {@code prod} if DATABASE_URL was never pasted into Render —
- * otherwise Hibernate/Hikari can sit for a long time and the public URL
- * never leaves the starting page.
+ * Crash in prod if DATABASE_URL was never set. Otherwise Hibernate sits
+ * there and the public URL never leaves the starting page.
  */
 public class ProdDatabaseGuard implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
 

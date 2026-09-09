@@ -1,10 +1,9 @@
 package com.example.retail.config;
 
 /**
- * Render (and Cloud Run) mark a service "live" as soon as PID 1 is running —
- * often a minute before Tomcat accepts HTTP. When we detect a hosted
- * environment, bind the public {@code PORT} immediately with
- * {@link EarlyBindProxy} and put Tomcat on a loopback port behind it.
+ * Render calls the service "live" as soon as PID 1 starts — often a minute
+ * before Tomcat answers HTTP. Bind PORT right away with EarlyBindProxy and
+ * put Tomcat on loopback behind it.
  */
 public final class HostedPortBinding {
 

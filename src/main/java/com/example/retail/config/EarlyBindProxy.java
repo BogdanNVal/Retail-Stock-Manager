@@ -18,10 +18,9 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 
 /**
- * Listens on the public port immediately (so Render's scanner and browsers
- * get a TCP connection) and reverse-proxies to Tomcat once it is up.
- * Until then, visitors see an auto-refreshing "starting" page instead of
- * a connection error.
+ * Grab PORT immediately so Render's scanner (and the browser) get a TCP
+ * connection. Until Tomcat is up, people see a "starting" page instead of
+ * connection refused.
  */
 public final class EarlyBindProxy {
 
@@ -77,7 +76,7 @@ public final class EarlyBindProxy {
                 }
             });
             byte[] body = response.body() == null ? new byte[0] : response.body();
-            // Java HttpServer: >0 fixed length, 0 chunked, <0 no body.
+            // HttpServer: length >0 is fixed, 0 is chunked, <0 means no body.
             if (body.length == 0) {
                 exchange.sendResponseHeaders(response.statusCode(), -1);
                 committed = true;
@@ -136,9 +135,9 @@ public final class EarlyBindProxy {
                 <body>
                   <main>
                     <h1>Retail Stock Manager is starting</h1>
-                    <p>The host already printed &ldquo;Your service is live&rdquo;, but Spring Boot
-                    is still booting on the free plan. This page refreshes every 5 seconds.
-                    First boot can take 1–2 minutes; after idle sleep, 30–60 seconds.</p>
+                    <p>Render already says the service is live, but Spring is still starting.
+                    This page refreshes every 5 seconds. First boot can take a couple of minutes;
+                    after idle sleep, more like 30–60 seconds.</p>
                   </main>
                 </body>
                 </html>
@@ -155,7 +154,7 @@ public final class EarlyBindProxy {
                 try {
                     builder.header(name, value);
                 } catch (IllegalArgumentException ignored) {
-                    // JDK forbids some hop-by-hop / restricted headers on HttpRequest.
+                    // HttpRequest rejects some hop-by-hop headers.
                 }
             }
         });

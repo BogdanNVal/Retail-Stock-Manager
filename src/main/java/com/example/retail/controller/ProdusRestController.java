@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** JSON API for products. HTML pages are served by {@link ProdusController}. */
 @RestController
 @RequestMapping("/api/produse")
 public class ProdusRestController {

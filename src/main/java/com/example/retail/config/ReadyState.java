@@ -8,8 +8,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 /**
- * Publishes a tiny readiness signal for the Docker early proxy and fails fast
- * in {@code prod} when the Postgres URL was never configured.
+ * Tiny ready flag for the Docker proxy. Also blows up in prod if Postgres
+ * was never configured.
  */
 @Component
 public class ReadyState {
@@ -28,7 +28,7 @@ public class ReadyState {
         log.info("Application ready — public proxy can forward traffic to Tomcat");
     }
 
-    /** Fails fast in {@code prod} if Postgres was never configured. */
+    /** Prod without a Postgres URL is a config mistake, not a slow start. */
     public static void assertProdDatabaseConfigured(Environment env) {
         if (!env.matchesProfiles("prod")) {
             return;

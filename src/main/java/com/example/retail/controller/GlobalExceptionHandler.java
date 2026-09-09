@@ -14,8 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.stream.Collectors;
 
 /**
- * Maps common service/validation failures to consistent responses for REST controllers only
- * (does not intercept HTML {@code @Controller} flows).
+ * REST errors only. HTML pages have their own flash/model messages.
  */
 @RestControllerAdvice(annotations = RestController.class)
 public class GlobalExceptionHandler {
